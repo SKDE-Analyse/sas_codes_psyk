@@ -1,0 +1,1 @@
+/*Makro for å aggregere psykiatridata*/
