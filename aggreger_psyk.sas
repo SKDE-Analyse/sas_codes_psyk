@@ -2,6 +2,8 @@
 
 /*Makro for å aggregere psykiatridata*/
 
+/*Må først kjøre off_priv_psyk.sas og ohjelp_elek_psyk.sas*/
+
 %macro unik_pasient_aar(datasett = , variabel =);
 
 /* 
@@ -69,8 +71,8 @@ data &inndata._&agg_var;
 set &inndata._&agg_var;
   if erDogn=1 then do;
     inn = 1;
-    if innmateHast in (4,5) then inn_elektiv = 1;
-    if innmateHast in (1,2,3) then inn_ohjelp = 1;
+    if elektiv = 1 then inn_elektiv = 1;
+    if ohjelp = 1 then inn_ohjelp = 1;
   end;
 run;
 
@@ -80,15 +82,15 @@ set &inndata._&agg_var;
   if erDogn = 0 then do;
     poli = 1;
    
-    if sektor in (4,5) then do; /*Avtalespesialister*/
+    if AvtSpes = 1 then do; /*Avtalespesialister*/
         poli_priv = 1;    
         poli_as = 1;
     end;
-    else if behHf = 27 then do; /*Privat sykehus*/
+    else if privSH = 1 then do; /*Privat sykehus*/
         poli_priv = 1;      
         poli_psh = 1;
     end;
-    else if behHF ne 27 then poli_off = 1;    /*Offentlige institusjoner*/    
+    else if off = 1 then poli_off = 1;    /*Offentlige institusjoner*/    
   end;
 run;
 
