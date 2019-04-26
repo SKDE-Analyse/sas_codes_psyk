@@ -1,7 +1,7 @@
-%macro DagAktivitet(innDataSett);
+%macro DagAktivitet(inndata=, utdata=);
 
 
-/* Create a new variable, KontaktID, to identify contacts per pid per dag per institusjonID */
+/* Create a new variable, KontaktID, to identify contacts per pid per dag per institusjonID2 */
 
 /* If a pid has dag/poli during the day, they are considered together in the same KontaktID,
    and if the same pid has an overnight stay on the same day, that is considered as another KontaktID */
@@ -10,8 +10,8 @@
 /*
 Nye tidsvariabler, både dato og tidspunkt på døgnet for ut og inn
 */
-data &innDataSett;
-  set &innDataSett;
+data &inndata;
+  set &inndata;
 
   if inntid=. then inntid=0;
   if uttid=. then uttid=0;
@@ -24,12 +24,12 @@ data &innDataSett;
 
 run;
 
-proc sort data=&innDataSett;
-  by pid inndato utdatoKombi descending ,;
+proc sort data=&inndata;
+  by pid inndato utdatoKombi descending varighet;
 run;
 
-data &innDataSett;
-  set &innDataSett;
+data &inndata;
+  set &inndata;
   
   by pid inndato utdatoKombi descending varighet;
   
@@ -46,19 +46,19 @@ run;
 
 * create kontakt level information;
 
-proc sort data=&innDataSett;
-  by pid inndato utdatoKombi institusjonID;
+proc sort data=&inndata;
+  by pid inndato utdatoKombi institusjonID2;
 run;
  
-data &innDataSett;
-  set &innDataSett;
+data &inndata;
+  set &inndata;
   
  
-  by pid inndato utdatoKombi institusjonID;
+  by pid inndato utdatoKombi institusjonID2;
   retain kontaktID; 
   
   * assign kontaktID for opphold within the same day, within the same institution;
-  if first.institusjonID then do;
+  if first.institusjonID2 then do;
     KontaktID=pid*1000+oppholdsnr;
 	KontaktNOpphold_tmp=0;* number of opphold within each contact;
 	KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold;
@@ -72,18 +72,18 @@ run;
 
 
 PROC SQL;
-	CREATE TABLE &innDataSett AS 
+	CREATE TABLE &utdata AS 
 	SELECT *,
 	      MAX(KontaktNOpphold_tmp) AS KontaktNOpphold , max(KontaktVarighet_tmp) as KontaktVarighet, 
 	      min(inndatotid) as KontaktInndatotid, max(utdatotid)   as KontaktUtdatotid,
  	      min(inndato   ) as KontaktInndato   , max(utdatoKombi) as KontaktUtdato, 
 		  max(aar) as KontaktAar, max(alder_omkodet) as KontaktAlder
-	FROM &innDataSett
+	FROM &inndata
 	GROUP BY KontaktID;
 QUIT;
 
-data &innDataSett;
-  set &innDataSett(drop=KontaktNOpphold_tmp KontaktVarighet_tmp);
+data &utdata;
+  set &utdata(drop=KontaktNOpphold_tmp KontaktVarighet_tmp);
   
   KontaktTotTimer=KontaktUtdatotid-KontaktInndatotid;
   KontaktLiggetid=KontaktUtdato-KontaktInndato;
