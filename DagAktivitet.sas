@@ -60,9 +60,8 @@ data &inndata;
   * assign kontaktID for opphold within the same day, within the same institution;
   if first.institusjonID2 then do;
     KontaktID=pid*1000+oppholdsnr;
-	KontaktNOpphold_tmp=0;* number of opphold within each contact;
-	KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold;
-
+	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
+	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
   end;
   
   KontaktNOpphold_tmp+1;
@@ -70,15 +69,58 @@ data &inndata;
 
 run;
 
+/* døgn at the same institution that are less than 8 hours apart are considered as the same contact */
+
+proc sort data=&inndata (keep=pid institusjonID2 inndatotid utdatotid varighet erDogn oppholdsnr inndato_teller KontaktNOpphold_tmp KontaktVarighet_tmp) out=dogn;
+  where erDogn=1;
+  by pid institusjonID2 inndatotid;
+run;
+
+/* it's possible this doesn't take of more than 2 døgn to be assigned to the same kontaktID */
+data dogn(drop=lag_: tid_diff);
+  set dogn;
+  by pid InstitusjonID2;
+  
+  KontaktID=pid*1000+oppholdsnr;
+  KontaktNOpphold_tmp=1;* number of opphold within each contact;
+  KontaktVarighet_tmp=varighet;* contact duration - sum up duration for each opphold, even if there are overlap;
+
+  lag_oppholdsnr=lag(oppholdsnr);
+  lag_utdatotid=lag(utdatotid);
+  lag_varighet=lag(varighet);
+
+  if first.pid=0 and first.institusjonID2=0 then do;
+   tid_diff=inndatotid-lag_utdatotid;
+   if tid_diff<=28800 then do; /* less than 8 hours.  this includes check in before the previous one is checked out! */
+     KontaktID=pid*1000+lag_oppholdsnr;
+	   KontaktNOpphold_tmp+1;
+     KontaktVarighet_tmp+lag_varighet;
+   end;
+  end;
+  format lag_utdatotid datetime18.;
+run;
+
+proc sort data=dogn;
+  by pid oppholdsnr;
+run;
+
+proc sort data=&inndata;
+  by pid oppholdsnr;
+run;
+
+data &inndata._2;
+  merge &inndata dogn;
+  by pid oppholdsnr;
+run;
 
 PROC SQL;
 	CREATE TABLE &utdata AS 
 	SELECT *,
-	      MAX(KontaktNOpphold_tmp) AS KontaktNOpphold , max(KontaktVarighet_tmp) as KontaktVarighet, 
+	      MAX(KontaktNOpphold_tmp) AS KontaktNOpphold , max(KontaktVarighet_tmp) as KontaktVarighet, /*kontaktVarighet is probably not very useful as it often double counts.  KontaktTotTimer is more accurate */
 	      min(inndatotid) as KontaktInndatotid, max(utdatotid)   as KontaktUtdatotid,
  	      min(inndato   ) as KontaktInndato   , max(utdatoKombi) as KontaktUtdato, 
 		  max(aar) as KontaktAar, max(alder_omkodet) as KontaktAlder
-	FROM &inndata
+	FROM &inndata._2
 	GROUP BY KontaktID;
 QUIT;
 
