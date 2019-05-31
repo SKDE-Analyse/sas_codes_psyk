@@ -71,32 +71,37 @@ run;
 
 /* døgn at the same institution that are less than 8 hours apart are considered as the same contact */
 
-proc sort data=&inndata (keep=pid institusjonID2 inndatotid utdatotid varighet erDogn oppholdsnr inndato_teller KontaktNOpphold_tmp KontaktVarighet_tmp) out=dogn;
+proc sort data=&inndata (keep=pid institusjonID2 inndatotid inndato utdatotid utdatoKombi varighet erDogn oppholdsnr inndato_teller) out=dogn;
   where erDogn=1;
   by pid institusjonID2 inndatotid;
 run;
 
 /* it's possible this doesn't take of more than 2 døgn to be assigned to the same kontaktID */
-data dogn(drop=lag_: tid_diff);
+data dogn/*(drop=lag_: tid_diff)*/;
   set dogn;
-  by pid InstitusjonID2;
-  
-  KontaktID=pid*1000+oppholdsnr;
-  KontaktNOpphold_tmp=1;* number of opphold within each contact;
-  KontaktVarighet_tmp=varighet;* contact duration - sum up duration for each opphold, even if there are overlap;
+  by pid InstitusjonID2 inndatotid;
+  retain KontaktID;
 
   lag_oppholdsnr=lag(oppholdsnr);
   lag_utdatotid=lag(utdatotid);
+  lag_utdatoKombi=lag(utdatoKombi);
   lag_varighet=lag(varighet);
+  tid_diff=inndatotid-lag_utdatotid;
 
-  if first.pid=0 and first.institusjonID2=0 then do;
-   tid_diff=inndatotid-lag_utdatotid;
-   if tid_diff<=28800 then do; /* less than 8 hours.  this includes check in before the previous one is checked out! */
-     KontaktID=pid*1000+lag_oppholdsnr;
-	   KontaktNOpphold_tmp+1;
-     KontaktVarighet_tmp+lag_varighet;
-   end;
+  /* assign a new contact id if the first instance of institution or if the stay is more than 8 hours from the last discharge */
+  /*if first.institusjonID2 or (first.institusjonID2=0 and tid_diff>28800) then do;*/
+  
+  /*assign a new contact id if the first instance of institution 
+  or if inndato for the stay is greater than (later than) utdato for the previous stay*/
+  if first.institusjonID2 or if (first.institusjonID2=0 and inndato gt lag_utdatoKombi) then do;
+
+    KontaktID=pid*1000+oppholdsnr;
+	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
+	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
   end;
+     
+  KontaktNOpphold_tmp+1;* number of opphold within each contact;
+  KontaktVarighet_tmp+varighet;* contact duration - sum up duration for each opphold, even if there are overlap;
   format lag_utdatotid datetime18.;
 run;
 
