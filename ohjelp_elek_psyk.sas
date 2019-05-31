@@ -1,4 +1,4 @@
-%macro off_priv_psyk(inndata=, utdata=);
+%macro ohjelp_elek_psyk(inndata=, utdata=);
 
 data &utdata;
 set &inndata;
