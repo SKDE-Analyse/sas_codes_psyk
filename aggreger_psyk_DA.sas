@@ -34,7 +34,10 @@ run;
 /* 
 Macro for å markere unike pasienter pr år
 
-Ny variabel, &variabel._unik_aar, lages i samme datasett
+Ny variabel, &variabel._unik_aar_inst, lages i samme datasett
+
+Macroen er testet og fungerer som ønsket.
+
 */
 
 /*1. Sorter på år, aktuell hendelse (merkevariabel), PID, kontaktID;*/
