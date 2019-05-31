@@ -29,6 +29,29 @@ run;
 
 %mend;
 
+%macro unik_pas_aar_inst(datasett = , variabel =);
+
+/* 
+Macro for å markere unike pasienter pr år
+
+Ny variabel, &variabel._unik_aar, lages i samme datasett
+*/
+
+/*1. Sorter på år, aktuell hendelse (merkevariabel), PID, kontaktID;*/
+proc sort data=&datasett;
+by aar &variabel pid institusjonID2;
+run;
+
+/*2. By-statement sørger for at riktig opphold med hendelse velges i kombinasjon med First.-funksjonen og betingelse på hendelse*/
+data &datasett;
+set &datasett;
+&variabel._unik_aar_inst = .;
+by aar &variabel pid institusjonID2;
+if first.institusjonID2 and &variabel = 1 then &variabel._unik_aar_inst = 1;	
+run;
+
+%mend;
+
 proc sort data=&inndata;
 by &agg_var pid kontaktID;
 run;
@@ -76,16 +99,16 @@ set &inndata._&agg_var._red;
 run;
 
 
-/**/
+/*Teller unike pasienter for utdata på bosted*/
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = tot);
-
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli);
-
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_off);
-
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_priv);
-
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = inn);
+
+/*Teller unike pasienter for utdata på behandler*/
+%unik_pas_aar_inst(datasett = &inndata._&agg_var._red, variabel = poli);
+%unik_pas_aar_inst(datasett = &inndata._&agg_var._red, variabel = inn);
 
 %if &ut_komnr=1 %then %do;
 
@@ -173,10 +196,10 @@ run;
   proc sql;
     create table ut_behHF as 
     select distinct Kontaktaar, ermann, KontaktAlder, BehHF, type_beh,
-    SUM(inn) as inn,
+    SUM(inn) as inn, SUM(inn_unik_aar_inst) as inn_unik_aar_i
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
-    SUM(poli) as poli, 
+    SUM(poli) as poli, SUM(poli_unik_aar_inst) as poli_unik_aar_i 
     SUM(poli_off) as poli_off, 
     SUM(poli_priv) as poli_priv, 
     SUM(poli_as) as poli_as, 
