@@ -1,8 +1,10 @@
-%macro aggreger_psyk(inndata = , utdata = , agg_var = , mappe = work);
+%macro aggreger_psyk(inndata = , utdata = , agg_var = , mappe = work, ut_boHF=1, ut_boDPS=0, ut_komnr=0, ut_BehHF=1);
 
 /*Makro for å aggregere psykiatridata*/
 
 /*Må først kjøre off_priv_psyk.sas og ohjelp_elek_psyk.sas*/
+
+/*Variablene ut_boHF, ut_boDPS...etc definerer type utfil (hva slags variabel du ønsker å aggregere på). For aggregering til rateprogram må du ha bo_komnr=1 */
 
 %macro unik_pasient_aar(datasett = , variabel =);
 
@@ -34,6 +36,8 @@ Macro for å markere unike pasienter pr dag
 
 Ny variabel, &variabel._unik_dag, lages i samme datasett
 */
+
+/* JS - for å bruke EoC samme med aggregere makro, sette KontaktInndato i sted av inndato */
 
 /*1. Sorter på år, aktuell hendelse (merkevariabel), PID, InnDato, UtDato;*/
 proc sort data=&datasett;
@@ -113,39 +117,88 @@ run;
 
 %unik_pasient_aar(datasett = &inndata._&agg_var., variabel = inn);
 
-proc sql;
-   create table &mappe..&utdata._bo as 
-   select distinct aar, ermann, alder_omkodet, komnr, bydel,
-   SUM(tot_unik_aar) as tot_unik_aar,
-   SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
-   SUM(inn_elektiv) as inn_elek, 
-   SUM(inn_ohjelp) as inn_ohj, 
-   SUM(poli_unik_dag) as poli_unik_dag, SUM(poli_unik_aar) as poli_unik_aar,
-   SUM(poli_off_unik_dag) as poli_off_unik_dag, SUM(poli_off_unik_aar) as poli_off_unik_aar,
-   SUM(poli_priv_unik_dag) as poli_priv_unik_dag, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
-   SUM(poli_as_unik_dag) as poli_as_unik_dag, 
-   SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
-   SUM(liggetid_ny) as liggetid
-   from &inndata._&agg_var
-   group by aar, ermann, alder_omkodet, komnr, bydel;
-quit; run;
+%if &ut_komnr=1 %then %do;
 
-proc sql;
-   create table &mappe..&utdata._beh as 
-   select distinct aar, ermann, alder_omkodet, institusjonID2,
-   SUM(tot_unik_aar) as tot_unik_aar,
-   SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
-   SUM(inn_elektiv) as inn_elek, 
-   SUM(inn_ohjelp) as inn_ohj, 
-   SUM(poli_unik_dag) as poli_unik_dag, SUM(poli_unik_aar) as poli_unik_aar,
-   SUM(poli_off_unik_dag) as poli_off_unik_dag, SUM(poli_off_unik_aar) as poli_off_unik_aar,
-   SUM(poli_priv_unik_dag) as poli_priv_unik_dag, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
-   SUM(poli_as_unik_dag) as poli_as_unik_dag, 
-   SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
-   SUM(liggetid_ny) as liggetid
-   from &inndata._&agg_var
-   group by aar, ermann, alder_omkodet, institusjonID2;
-quit; run;
+  proc sql;
+    create table &mappe..&utdata._komnr as 
+    select distinct aar, ermann, alder_omkodet, komnr, bydel, borhf,
+    SUM(tot_unik_aar) as tot_unik_aar,
+    SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
+    SUM(inn_elektiv) as inn_elek, 
+    SUM(inn_ohjelp) as inn_ohj, 
+    SUM(poli_unik_dag) as poli_unik_dag, SUM(poli_unik_aar) as poli_unik_aar,
+    SUM(poli_off_unik_dag) as poli_off_unik_dag, SUM(poli_off_unik_aar) as poli_off_unik_aar,
+    SUM(poli_priv_unik_dag) as poli_priv_unik_dag, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
+    SUM(poli_as_unik_dag) as poli_as_unik_dag, 
+    SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
+    SUM(liggetid_ny) as liggetid
+    from &inndata._&agg_var
+    group by aar, ermann, alder_omkodet, komnr, bydel;
+  quit; run;
+
+%end;
+
+%if &ut_boHF=1 %then %do;
+
+  proc sql;
+    create table &mappe..&utdata._boHF as 
+    select distinct aar, ermann, alder_omkodet, boHF,
+    SUM(tot_unik_aar) as tot_unik_aar,
+    SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
+    SUM(inn_elektiv) as inn_elek, 
+    SUM(inn_ohjelp) as inn_ohj, 
+    SUM(poli_unik_dag) as poli_unik_dag, SUM(poli_unik_aar) as poli_unik_aar,
+    SUM(poli_off_unik_dag) as poli_off_unik_dag, SUM(poli_off_unik_aar) as poli_off_unik_aar,
+    SUM(poli_priv_unik_dag) as poli_priv_unik_dag, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
+    SUM(poli_as_unik_dag) as poli_as_unik_dag, 
+    SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
+    SUM(liggetid_ny) as liggetid
+    from &inndata._&agg_var
+    group by aar, ermann, alder_omkodet, boHF;
+  quit; run;
+
+%end;
+
+%if &ut_boDPS=1 %then %do;
+
+  proc sql;
+    create table &mappe..&utdata._boDPS as 
+    select distinct aar, ermann, alder_omkodet, boDPS,
+    SUM(tot_unik_aar) as tot_unik_aar,
+    SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
+    SUM(inn_elektiv) as inn_elek, 
+    SUM(inn_ohjelp) as inn_ohj, 
+    SUM(poli_unik_dag) as poli_unik_dag, SUM(poli_unik_aar) as poli_unik_aar,
+    SUM(poli_off_unik_dag) as poli_off_unik_dag, SUM(poli_off_unik_aar) as poli_off_unik_aar,
+    SUM(poli_priv_unik_dag) as poli_priv_unik_dag, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
+    SUM(poli_as_unik_dag) as poli_as_unik_dag, 
+    SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
+    SUM(liggetid_ny) as liggetid
+    from &inndata._&agg_var
+    group by aar, ermann, alder_omkodet, boDPS;
+  quit; run;
+
+%end;
+
+%if &ut_behHF=1 %then %do;
+
+  proc sql;
+    create table &mappe..&utdata._behHF as 
+    select distinct aar, ermann, alder_omkodet, BehHF, type_beh,
+    SUM(inn) as inn,
+    SUM(inn_elektiv) as inn_elek, 
+    SUM(inn_ohjelp) as inn_ohj, 
+    SUM(poli_unik_dag) as poli_unik_dag, 
+    SUM(poli_off_unik_dag) as poli_off_unik_dag, 
+    SUM(poli_priv_unik_dag) as poli_priv_unik_dag, 
+    SUM(poli_as_unik_dag) as poli_as_unik_dag, 
+    SUM(poli_psh_unik_dag) as poli_psh_unik_dag, 
+    SUM(liggetid_ny) as liggetid
+    from &inndata._&agg_var
+    group by aar, ermann, alder_omkodet, BehHF, type_beh;
+  quit; run;
+
+%end;
 
 
 proc datasets nolist;
