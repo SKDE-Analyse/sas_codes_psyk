@@ -93,7 +93,7 @@ data dogn/*(drop=lag_: tid_diff)*/;
   
   /*assign a new contact id if the first instance of institution 
   or if inndato for the stay is greater than (later than) utdato for the previous stay*/
-  if first.institusjonID2 or if (first.institusjonID2=0 and inndato gt lag_utdatoKombi) then do;
+  if first.institusjonID2 or (first.institusjonID2=0 and inndato gt lag_utdatoKombi) then do;
 
     KontaktID=pid*1000+oppholdsnr;
 	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
