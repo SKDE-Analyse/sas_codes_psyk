@@ -1,4 +1,4 @@
-latex_tabell_behType_boHF(inndata=phvtsb1517, opptak=1, navn_opptak=Finnmark, innb=innbyggere_1517);
+%macro latex_tabell_behType_boHF(inndata=phvtsb1517, opptak=1, navn_opptak=Finnmark, innb=innbyggere_1517);
 
 proc format;
 
