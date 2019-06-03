@@ -199,10 +199,10 @@ run;
   proc sql;
     create table ut_behHF as 
     select distinct Kontaktaar, ermann, KontaktAlder, BehHF, type_beh,
-    SUM(inn) as inn, SUM(inn_unik_aar_inst) as inn_unik_aar_i
+    SUM(inn) as inn, SUM(inn_unik_aar_inst) as inn_unik_aar_i,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
-    SUM(poli) as poli, SUM(poli_unik_aar_inst) as poli_unik_aar_i 
+    SUM(poli) as poli, SUM(poli_unik_aar_inst) as poli_unik_aar_i, 
     SUM(poli_off) as poli_off, 
     SUM(poli_priv) as poli_priv, 
     SUM(poli_as) as poli_as, 
