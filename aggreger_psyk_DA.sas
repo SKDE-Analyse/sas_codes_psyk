@@ -42,15 +42,15 @@ Macroen er testet og fungerer som ønsket.
 
 /*1. Sorter på år, aktuell hendelse (merkevariabel), PID, kontaktID;*/
 proc sort data=&datasett;
-by aar &variabel pid institusjonID2;
+by aar &variabel pid behHF;
 run;
 
 /*2. By-statement sørger for at riktig opphold med hendelse velges i kombinasjon med First.-funksjonen og betingelse på hendelse*/
 data &datasett;
 set &datasett;
 &variabel._unik_aar_inst = .;
-by aar &variabel pid institusjonID2;
-if first.institusjonID2 and &variabel = 1 then &variabel._unik_aar_inst = 1;	
+by aar &variabel pid behHF;
+if first.behHF and &variabel = 1 then &variabel._unik_aar_inst = 1;	
 run;
 
 %mend;
