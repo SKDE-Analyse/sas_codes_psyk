@@ -43,7 +43,7 @@ run;
 /*Aggregerer på nytt med ny variabel BehHF_type, finner sum for årene 15-17*/
 proc sql;
 create table tsb1517_BehHFType as
-select distinct BehHF_type, SUM(inn) as tot_inn, SUM(poli) as tot_poli
+select distinct BehHF_type, SUM(inn) as tot_inn, SUM(inn_unik_aar_i) as tot_inn_u, SUM(poli) as tot_poli, SUM(poli_unik_aar_i) as tot_poli_u
 from tsb1517_agg_BehHF
 group by BehHF_type;
 quit; run;
@@ -58,6 +58,12 @@ snitt_poli= tot_poli/3;
 sum_inn+snitt_inn;
 sum_poli+snitt_poli;
 
+snitt_inn_u=tot_inn_u/3;
+snitt_poli_u= tot_poli_u/3;
+
+sum_inn_u+snitt_inn_u;
+sum_poli_u+snitt_poli_u;
+
 sektor=1;
 
 run;
@@ -65,7 +71,8 @@ run;
 /*Finner andel behandlet i eget HF/annet i HN, privat etc.*/
 proc sql;
 create table tsb1517_BehHFType2 as
-select distinct sektor, BehHF_type, tot_inn, tot_poli, snitt_inn, snitt_poli, max(sum_inn) as sum_inn, max(sum_poli) as sum_poli
+select distinct sektor, BehHF_type, tot_inn, tot_poli, snitt_inn, snitt_poli, max(sum_inn) as sum_inn, max(sum_poli) as sum_poli, 
+tot_inn_u, tot_poli_u, snitt_inn_u, snitt_poli_u, max(sum_inn_u) as sum_inn_u, max(sum_poli_u) as sum_poli_u
 from tsb1517_BehHFType
 group by sektor;
 quit; run;
@@ -75,6 +82,9 @@ set tsb1517_BehHFType2;
 
 andel_inn=snitt_inn/sum_inn;
 andel_poli=snitt_poli/sum_poli;
+
+andel_inn_u=snitt_inn_u/sum_inn_u;
+andel_poli_u=snitt_poli_u/sum_poli_u;
 
 BoHF=&opptak;
 
@@ -132,7 +142,7 @@ run;
 
 proc sql;
 create table phv1517_BehHFType as
-select distinct BehHF_type, SUM(inn) as tot_inn, SUM(poli) as tot_poli
+select distinct BehHF_type, SUM(inn) as tot_inn, SUM(inn_unik_aar_i) as tot_inn_u, SUM(poli) as tot_poli, SUM(poli_unik_aar_i) as tot_poli_u
 from phv1517_alle_agg_BehHF
 group by BehHF_type;
 quit; run;
@@ -146,13 +156,20 @@ snitt_poli= tot_poli/3;
 sum_inn+snitt_inn;
 sum_poli+snitt_poli;
 
+snitt_inn_u=tot_inn_u/3;
+snitt_poli_u= tot_poli_u/3;
+
+sum_inn_u+snitt_inn_u;
+sum_poli_u+snitt_poli_u;
+
 sektor=2;
 
 run;
 
 proc sql;
 create table phv1517_BehHFType2 as
-select distinct sektor, BehHF_type, tot_inn, tot_poli, snitt_inn, snitt_poli, max(sum_inn) as sum_inn, max(sum_poli) as sum_poli
+select distinct sektor, BehHF_type, tot_inn, tot_poli, snitt_inn, snitt_poli, max(sum_inn) as sum_inn, max(sum_poli) as sum_poli, 
+tot_inn_u, tot_poli_u, snitt_inn_u, snitt_poli_u, max(sum_inn_u) as sum_inn_u, max(sum_poli_u) as sum_poli_u
 from phv1517_BehHFType
 group by sektor;
 quit; run;
@@ -162,6 +179,9 @@ set phv1517_BehHFType2;
 
 andel_inn=snitt_inn/sum_inn;
 andel_poli=snitt_poli/sum_poli;
+
+andel_inn_u=snitt_inn_u/sum_inn_u;
+andel_poli_u=snitt_poli_u/sum_poli_u;
 
 BoHF=&opptak;
 
@@ -205,13 +225,22 @@ sum_poli_I=10000*sum_poli/snitt_innbyggere;
 snitt_inn_I=10000*snitt_inn/snitt_innbyggere;
 snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
 
+sum_inn_u_I=10000*sum_inn_u/snitt_innbyggere;
+sum_poli_u_I=10000*sum_poli_u/snitt_innbyggere;
+
+snitt_inn_u_I=10000*snitt_inn_u/snitt_innbyggere;
+snitt_poli_u_I=10000*snitt_poli_u/snitt_innbyggere;
+
 run;
 
-/*Lager output-tabeller, en tabell for pasientdager og en for institusjonsopphold.*/
+/*Lager output-tabeller.*/
+
+/*PHV og TSB SAMMEN, BARE PD/IO*/
+
 ods tagsets.tablesonlylatex tagset=event1
 file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
 
-title "Bosatte i &navn_opptak, inst. opphold";
+title "Bosatte i &navn_opptak, inst. opphold, TSB/PHV";
 PROC TABULATE
 DATA=TSBPHV1517_&navn_opptak._I;
 	VAR andel_inn andel_poli snitt_inn snitt_poli snitt_inn_I snitt_poli_I;
@@ -237,7 +266,7 @@ ods tagsets.tablesonlylatex close;
 ods tagsets.tablesonlylatex tagset=event1
 file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_PASDAGER.tex" (notop nobot) style=journal;
 
-title "Bosatte i &navn_opptak, pasientdager";
+title "Bosatte i &navn_opptak, pasientdager, TSB/PHV";
 PROC TABULATE
 DATA=TSBPHV1517_&navn_opptak._I;
 	VAR andel_inn andel_poli snitt_inn snitt_poli snitt_inn_I snitt_poli_I;
@@ -259,9 +288,115 @@ RUN;
 TITLE;
 ods tagsets.tablesonlylatex close;
 
-/*proc datasets nolist;*/
-/*delete tsb1517: phv1517: inn_:;*/
-/*run;*/
+/*PHV og TSB HVER FOR SEG, PD/IO og UNIKE PASIENTER*/
+
+/*Institusjonsopphold*/
+
+ods tagsets.tablesonlylatex tagset=event1
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSB_1517_INSTOPPH.tex" (notop nobot) style=journal;
+
+title "Bosatte i &navn_opptak, inst. opphold og pasienter, TSB";
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=1;
+	VAR andel_inn andel_inn_u snitt_inn snitt_inn_u snitt_inn_I snitt_inn_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	snitt_inn={label='Inst.opph.'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_inn_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	;
+
+RUN;
+TITLE;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex tagset=event1
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._PHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
+
+title "Bosatte i &navn_opptak, inst. opphold og pasienter, PHV";
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=2;
+	VAR andel_inn andel_inn_u snitt_inn snitt_inn_u snitt_inn_I snitt_inn_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	snitt_inn={label='Inst.opph.'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_inn_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	;
+
+RUN;
+TITLE;
+ods tagsets.tablesonlylatex close;
+
+/*Pasientdager*/
+
+ods tagsets.tablesonlylatex tagset=event1
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSB_1517_PASDAGER.tex" (notop nobot) style=journal;
+
+title "Bosatte i &navn_opptak, pasientdager og pasienter, TSB";
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=1;
+	VAR andel_poli andel_poli_u snitt_poli snitt_poli_u snitt_poli_I snitt_poli_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	snitt_poli={label='Pas.dager'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_poli_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	;
+
+RUN;
+TITLE;
+ods tagsets.tablesonlylatex close;
+
+ods tagsets.tablesonlylatex tagset=event1
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._PHV_1517_PASDAGER.tex" (notop nobot) style=journal;
+
+title "Bosatte i &navn_opptak, pasientdager og pasienter, PHV";
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=2;
+	VAR andel_poli andel_poli_u snitt_poli snitt_poli_u snitt_poli_I snitt_poli_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	snitt_poli={label='Pas.dager'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_poli_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	;
+
+RUN;
+TITLE;
+ods tagsets.tablesonlylatex close;
+
+proc datasets nolist;
+delete tsb1517: phv1517: inn_:;
+run;
 
 
 
