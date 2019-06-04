@@ -9,7 +9,7 @@ value BehHF_type
 4='Privat'
 5='Avtalespesialist';
 
-/*Bosatte i angitt opptaksomrÃ¥de*/
+/*Bosatte i angitt opptaksområde*/
 
 /*TSB*/
 
@@ -40,7 +40,7 @@ format BehHF_type BehHF_type.;
 
 run;
 
-/*Aggregerer pÃ¥ nytt med ny variabel BehHF_type, finner sum for Ã¥rene 15-17*/
+/*Aggregerer på nytt med ny variabel BehHF_type, finner sum for årene 15-17*/
 proc sql;
 create table tsb1517_BehHFType as
 select distinct BehHF_type, SUM(inn) as tot_inn, SUM(poli) as tot_poli
@@ -48,7 +48,7 @@ from tsb1517_agg_BehHF
 group by BehHF_type;
 quit; run;
 
-/*Finner snitt for Ã¥rene 15-17. Summerer for Ã¥ finne totalt antall inst.opph./pas.dager uansett behandlingssted (sum_inn og sum_poli).*/
+/*Finner snitt for årene 15-17. Summerer for å finne totalt antall inst.opph./pas.dager uansett behandlingssted (sum_inn og sum_poli).*/
 data tsb1517_BehHFType;
 set tsb1517_BehHFType;
 

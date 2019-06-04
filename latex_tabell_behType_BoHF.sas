@@ -9,7 +9,7 @@ value Beh_type
 4='Utenfor HN'
 5='Privat';
 
-/*Bosatte i angitt opptaksomrÃ¥de*/
+/*Bosatte i angitt opptaksområde*/
 
 /*TSB*/
 
