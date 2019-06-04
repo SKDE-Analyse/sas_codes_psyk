@@ -1,4 +1,4 @@
-%macro panelfig_todelt_HF(aar1=2015, aar2=2016, aar3=2017, del1=, del2=, tot=, var=, label1=, label2=, xlabel=, figtittel=);
+%macro panelfig_todelt_HF(aar1=2015, aar2=2016, aar3=2017, innb_where=, del1=, del2=, tot=, var=, label1=, label2=, xlabel=, figtittel=);
 
 proc format;
 
@@ -21,6 +21,7 @@ proc sql;
 create table innbygg_boHF as
 select distinct aar, boHF, sum(innbyggere) as innb
 from innbyggere_1517
+&innb_where
 group by aar, boHF;
 quit;
 run;
