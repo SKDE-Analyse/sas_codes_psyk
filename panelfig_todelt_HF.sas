@@ -9,7 +9,7 @@ Value BoHF_ny
 4='Helgeland'
 5='Utenfor HN';
 
-/*Beregner innbyggertall pÃ¥ ny boHF variabel*/
+/*Beregner innbyggertall på ny boHF variabel*/
 
 data innbyggere_1517;
 set innbygg.innb_2004_2017_bydel_allebyer;
@@ -51,7 +51,7 @@ run;
 %DagAktivitet(inndata=&del1, utdata=&del1._DA);
 %aggreger_psyk_DA(inndata=&del1._DA, utdata=agg1, agg_var=alle, ut_boHF=1, ut_BehHF=0, ut_boDPS=0);
 
-/*Lager ny boHF variabel, grupperer alle boHF i sÃ¸r til ett boHF.*/
+/*Lager ny boHF variabel, grupperer alle boHF i sør til ett boHF.*/
 data agg1_boHF2;
 set agg1_boHF;
 where boHF ne .;
@@ -65,7 +65,7 @@ var=&var;
 
 run;
 
-/*aggregerer pÃ¥ ny boHF variabel*/
+/*aggregerer på ny boHF variabel*/
 proc sql;
 create table agg1_boHF_ny as
 select distinct aar, boHF_ny, sum(var) as var_ny
@@ -98,7 +98,7 @@ run;
 %DagAktivitet(inndata=&del2, utdata=&del2._DA);
 %aggreger_psyk_DA(inndata=&del2._DA, utdata=agg2, agg_var=alle, ut_boHF=1, ut_BehHF=0, ut_boDPS=0);
 
-/*Lager ny boHF variabel, grupperer alle boHF i sÃ¸r til ett boHF.*/
+/*Lager ny boHF variabel, grupperer alle boHF i sør til ett boHF.*/
 data agg2_boHF2;
 set agg2_boHF;
 where boHF ne .;
@@ -112,7 +112,7 @@ var=&var;
 
 run;
 
-/*aggregerer pÃ¥ ny boHF variabel*/
+/*aggregerer på ny boHF variabel*/
 proc sql;
 create table agg2_boHF_ny as
 select distinct aar, boHF_ny, sum(var) as var_ny
@@ -144,7 +144,7 @@ run;
 %DagAktivitet(inndata=&tot, utdata=&tot._DA);
 %aggreger_psyk_DA(inndata=&tot._DA, utdata=agg3, agg_var=alle, ut_boHF=1, ut_BehHF=0, ut_boDPS=0);
 
-/*Lager ny boHF variabel, grupperer alle boHF i sÃ¸r til ett boHF.*/
+/*Lager ny boHF variabel, grupperer alle boHF i sør til ett boHF.*/
 data agg3_boHF2;
 set agg3_boHF;
 where boHF ne .;
@@ -158,7 +158,7 @@ var=&var;
 
 run;
 
-/*aggregerer pÃ¥ ny boHF variabel*/
+/*aggregerer på ny boHF variabel*/
 proc sql;
 create table agg3_boHF_ny as
 select distinct aar, boHF_ny, sum(var) as var_ny
@@ -236,7 +236,7 @@ run;
 
 /*FIGURER*/
 
-%let mappe=Eget_HF\png\;
+%let mappe=Panelfigurer\png\;
 
 ODS Graphics ON /reset=All imagename="&figtittel._HF_panel" imagefmt=png border=off;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
@@ -253,7 +253,7 @@ RUN;
 
 ods listing close;
 
-%let mappe=Eget_HF\pdf\;
+%let mappe=Panelfigurer\pdf\;
 
 ODS Graphics ON /reset=All imagename="&figtittel._HF_panel" imagefmt=pdf border=off;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";

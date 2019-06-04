@@ -1,4 +1,4 @@
-%macro ratefig_BoHF(inndata=, var=poli, utfil_navn=, tab_head=, xlabel=);
+%macro ratefig_BoHF(inndata=, var=poli, utfil_navn=);
 
 proc format;
 
@@ -13,7 +13,7 @@ Value BoHF_ny
 %DagAktivitet(inndata=&inndata, utdata=&inndata._DA);
 %aggreger_psyk_DA(inndata=&inndata._DA, utdata=agg, agg_var=alle, ut_boHF=1, ut_BehHF=0, ut_boDPS=0);
 
-/*Summerer for Ã¥rene 15-17*/
+/*Summerer for årene 15-17*/
 proc sql;
 create table agg_boHF_tot as
 select distinct boHF, sum(&var) as var_tot
@@ -22,7 +22,7 @@ group by boHF;
 quit;
 run;
 
-/*Lager ny boHF variabel, grupperer alle boHF i sÃ¸r til ett boHF.*/
+/*Lager ny boHF variabel, grupperer alle boHF i sør til ett boHF.*/
 data agg_boHF_snitt;
 set agg_boHF_tot;
 where boHF ne .;
@@ -36,7 +36,7 @@ format boHF_ny boHF_ny.;
 
 run;
 
-/*Aggregerer pÃ¥ ny boHF variabel*/
+/*Aggregerer på ny boHF variabel*/
 proc sql;
 create table agg_boHF_ny as
 select distinct boHF_ny, sum(var_snitt) as var_snitt_ny
@@ -45,7 +45,7 @@ group by boHF_ny;
 quit;
 run;
 
-/*Beregner innbyggertall pÃ¥ ny boHF variabel*/
+/*Beregner innbyggertall på ny boHF variabel*/
 
 data innbyggere_1517;
 set innbygg.innb_2004_2017_bydel_allebyer;
@@ -101,7 +101,7 @@ var_rate=10000*var_snitt_ny/innb_snitt_ny;
 run;
 
 /*Lager figurer*/
-%let mappe=Eget_HF\png\;
+%let mappe=Ratefigurer\png\;
 
 ODS Graphics ON /reset=All imagename="&utfil_navn._HF" imagefmt=png border=off ;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
@@ -109,17 +109,17 @@ proc sgplot data=agg_boHF_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%)
 
      hbarparm category=boHF_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
 
- 	     *yaxis min=24 display=(noticks noline) label='OpptaksomrÃ¥de' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
-	 yaxis display=(noticks noline) label='Bosatte i opptaksomrÃ¥dene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
+ 	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
+	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
      xaxis  offsetmin=0 offsetmax=0.02  valueattrs=(size=8) label="&xlabel" labelattrs=(size=8 weight=bold);
-     Yaxistable var_snitt_ny innb_snitt_ny /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
-	 label var_snitt_ny="&tab_head" innb_snitt_ny="Innbyggere";
+     Yaxistable &hoyretabell /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
+	 label &labeltabell;
 
-format var_snitt_ny innb_snitt_ny nlnum8.0 boHF boHF_ny.;
+format &formattabell;
 
 run;Title; ods listing close;
 
-%let mappe=Eget_HF\pdf\;
+%let mappe=Ratefigurer\pdf\;
 
 ODS Graphics ON /reset=All imagename="&utfil_navn._HF" imagefmt=pdf border=off ;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
@@ -127,13 +127,14 @@ proc sgplot data=agg_boHF_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%)
 
      hbarparm category=boHF_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
 
- 	     *yaxis min=24 display=(noticks noline) label='OpptaksomrÃ¥de' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
-	 yaxis display=(noticks noline) label='Bosatte i opptaksomrÃ¥dene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
+ 	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
+	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
      xaxis  offsetmin=0 offsetmax=0.02  valueattrs=(size=8) label="&xlabel" labelattrs=(size=8 weight=bold);
-     Yaxistable var_snitt_ny innb_snitt_ny /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
-	 label var_snitt_ny="&tab_head" innb_snitt_ny="Innbyggere";
+     Yaxistable &hoyretabell /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
+	 label &labeltabell;
 
-format var_snitt_ny innb_snitt_ny nlnum8.0 boHF boHF_ny.;
+format &formattabell;
+
 
 run;Title; ods listing close;
 
