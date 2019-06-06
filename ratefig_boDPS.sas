@@ -60,7 +60,7 @@ run;
 
 data innbyggere_1517;
 set innbygg.innb_2004_2017_bydel_allebyer;
-where aar in (2015, 2016, 2017);
+where aar in (2015, 2016, 2017) and alder ge 18;
 %boomraaderPsyk;
 run;
 
