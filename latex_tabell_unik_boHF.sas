@@ -206,9 +206,14 @@ snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
 
 run;
 
+
+
+%Let mappe=latextab\HF\;
+
+
 /*Lager output-tabeller, en tabell for pasientdager og en for institusjonsopphold.*/
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_unik_INSTOPPH.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_unik_INSTOPPH.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, inst. opphold, pasienter per år";
 PROC TABULATE
@@ -234,7 +239,7 @@ TITLE;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_unik_PASDAGER.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_unik_PASDAGER.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, pasientdager, pasienter per år";
 PROC TABULATE

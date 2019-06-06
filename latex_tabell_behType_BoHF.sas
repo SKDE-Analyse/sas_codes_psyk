@@ -174,8 +174,10 @@ snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
 
 run;
 
+%Let mappe=latextab\HF\;
+
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_INSTOPPH2.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_INSTOPPH2.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak";
 PROC TABULATE
@@ -200,7 +202,7 @@ TITLE;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_PASDAGER2.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_PASDAGER2.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak";
 PROC TABULATE
