@@ -121,6 +121,7 @@ run;
 ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=png border=off ;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
 proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%);
+where BoDPS_ny le 14;
 
      hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
 
@@ -139,6 +140,7 @@ run;Title; ods listing close;
 ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=pdf border=off ;
 ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
 proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%);
+where BoDPS_ny le 14;
 
      hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
 
