@@ -1,4 +1,4 @@
-%macro latex_tabell_boHF(inndata=phvtsb1517, opptak=1, navn_opptak=Finnmark, innb=innbyggere_1517);
+%macro latex_tabell_boHF(inndata=phvtsb1517, opptak=1, dps=0, opptak2=, navn_opptak=Finnmark, innb=innbyggere_1517);
 
 proc format;
 
@@ -13,11 +13,20 @@ value BehHF_type
 
 /*TSB*/
 
+%if &dps=1 %then %do;
+/*Velger aktuell sektor og populasjon*/
+data tsb1517_&navn_opptak;
+set &inndata;
+where sektor=1 and BoHF=&opptak and BoDPS=&opptak2;
+run;
+%end;
+%else %do;
 /*Velger aktuell sektor og populasjon*/
 data tsb1517_&navn_opptak;
 set &inndata;
 where sektor=1 and BoHF=&opptak;
 run;
+%end;
 
 /*Grupperer sammen dag/poli-opphold og innleggelser til pasientdager og institusjonsopphold*/
 %DagAktivitet(inndata=tsb1517_&navn_opptak, utdata=tsb1517_DA);
@@ -93,10 +102,20 @@ run;
 /*PHV*/
 /*Alle stegene over gjentas for PHV.*/
 
+%if &dps=1 %then %do;
+/*Velger aktuell sektor og populasjon*/
+data phv1517_&navn_opptak;
+set &inndata;
+where sektor=2 and BoHF=&opptak and BoDPS=&opptak2;
+run;
+%end;
+%else %do;
+/*Velger aktuell sektor og populasjon*/
 data phv1517_&navn_opptak;
 set &inndata;
 where sektor=2 and BoHF=&opptak;
 run;
+%end;
 
 %DagAktivitet(inndata=phv1517_&navn_opptak, utdata=phv1517_DA);
 %aggreger_psyk_DA(inndata=phv1517_DA, utdata=phv1517_agg, agg_var=alle);
@@ -119,10 +138,21 @@ run;
 
 /*Tar inn avtalespesialister i PHV-data*/
 
+
+%if &dps=1 %then %do;
+/*Velger aktuell sektor og populasjon*/
+data phv1517_&navn_opptak._AS;
+set &inndata;
+where sektor=4 and BoHF=&opptak and BoDPS=&opptak2;
+run;
+%end;
+%else %do;
+/*Velger aktuell sektor og populasjon*/
 data phv1517_&navn_opptak._AS;
 set &inndata;
 where sektor=4 and BoHF=&opptak;
 run;
+%end;
 
 %DagAktivitet(inndata=phv1517_&navn_opptak._AS, utdata=phv1517_AS_DA);
 %aggreger_psyk_DA(inndata=phv1517_AS_DA, utdata=phv1517_AS_agg, agg_var=alle);
@@ -195,10 +225,22 @@ format sektor sektor.;
 run;
 
 /*Finner innbyggertall for aktuelt BoHF*/
+
+%if &dps=1 %then %do;
+/*Velger aktuell sektor og populasjon*/
+data inn_&navn_opptak.1517;
+set &innb;
+where BoHF=&opptak and BoDPS=&opptak2;
+run;
+%end;
+%else %do;
 data inn_&navn_opptak.1517;
 set &innb;
 where BoHF=&opptak;
 run;
+%end;
+
+
 
 proc sql;
 create table inn_&navn_opptak.1517BoHF as
@@ -236,9 +278,15 @@ run;
 /*Lager output-tabeller.*/
 
 /*PHV og TSB SAMMEN, BARE PD/IO*/
+%if &dps=1 %then %do;
+%Let mappe=latextab\DPS\;
+%end;
+%else %do;
+%Let mappe=latextab\HF\;
+%end;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, inst. opphold, TSB/PHV";
 PROC TABULATE
@@ -264,7 +312,7 @@ TITLE;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSBPHV_1517_PASDAGER.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSBPHV_1517_PASDAGER.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, pasientdager, TSB/PHV";
 PROC TABULATE
@@ -292,8 +340,107 @@ ods tagsets.tablesonlylatex close;
 
 /*Institusjonsopphold*/
 
+ods excel file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak..xlsx"
+    options(sheet_interval='table' sheet_name="TSB_IO");
+ title "Bosatte i &navn_opptak, inst. opphold og pasienter, TSB";
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=1;
+	VAR andel_inn andel_inn_u snitt_inn snitt_inn_u snitt_inn_I snitt_inn_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	CLASS sektor /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	sektor={label=''} *(
+	snitt_inn={label='Inst.opph.'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_inn_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	);
+
+RUN;
+TITLE;
+
+title "Bosatte i &navn_opptak, inst. opphold og pasienter, PHV";
+ods exel options(sheet_name="PHV_IO");
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=2;
+	VAR andel_inn andel_inn_u snitt_inn snitt_inn_u snitt_inn_I snitt_inn_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	CLASS sektor /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	sektor={label=''} *(
+	snitt_inn={label='Inst.opph.'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_inn_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_inn_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_inn_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	);
+
+RUN;
+TITLE;
+
+title "Bosatte i &navn_opptak, pasientdager og pasienter, TSB";
+ods exel options(sheet_name="TSB_PD");
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=1;
+	VAR andel_poli andel_poli_u snitt_poli snitt_poli_u snitt_poli_I snitt_poli_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	CLASS sektor /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	sektor={label=''} *(
+	snitt_poli={label='Pas.dager'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_poli_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	);
+
+RUN;
+TITLE;
+
+title "Bosatte i &navn_opptak, pasientdager og pasienter, PHV";
+ods exel options(sheet_name="PHV_PD");
+PROC TABULATE
+DATA=TSBPHV1517_&navn_opptak._I;
+where sektor=2;
+	VAR andel_poli andel_poli_u snitt_poli snitt_poli_u snitt_poli_I snitt_poli_u_I;
+	CLASS BehHF_type /	ORDER=UNFORMATTED MISSING;
+	CLASS sektor /	ORDER=UNFORMATTED MISSING;
+	TABLE 
+	/* Row Dimension */
+	BehHF_type={label=''},
+	/* Column Dimension */
+	sektor={label=''} *(
+	snitt_poli={label='Pas.dager'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	snitt_poli_u={label='Pasienter'}*Sum={label=''}*{f=nlnum8.0}  
+	snitt_poli_u_I={label='Rate'}*Sum={label=''}*{f=nlnum8.0}  
+	andel_poli_u={label='Andel'}*Sum={label=''}*{f=nlpct8.1} 
+	);
+
+RUN;
+TITLE;
+
+ ods _all_ close;
+
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSB_1517_INSTOPPH.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSB_1517_INSTOPPH.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, inst. opphold og pasienter, TSB";
 PROC TABULATE
@@ -318,7 +465,7 @@ TITLE;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._PHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._PHV_1517_INSTOPPH.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, inst. opphold og pasienter, PHV";
 PROC TABULATE
@@ -345,7 +492,7 @@ ods tagsets.tablesonlylatex close;
 /*Pasientdager*/
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._TSB_1517_PASDAGER.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._TSB_1517_PASDAGER.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, pasientdager og pasienter, TSB";
 PROC TABULATE
@@ -370,7 +517,7 @@ TITLE;
 ods tagsets.tablesonlylatex close;
 
 ods tagsets.tablesonlylatex tagset=event1
-file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\latex\&navn_opptak._PHV_1517_PASDAGER.tex" (notop nobot) style=journal;
+file="\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\&mappe.&navn_opptak._PHV_1517_PASDAGER.tex" (notop nobot) style=journal;
 
 title "Bosatte i &navn_opptak, pasientdager og pasienter, PHV";
 PROC TABULATE
