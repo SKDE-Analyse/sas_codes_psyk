@@ -95,7 +95,12 @@ andel_poli=snitt_poli/sum_poli;
 andel_inn_u=snitt_inn_u/sum_inn_u;
 andel_poli_u=snitt_poli_u/sum_poli_u;
 
+%if &dps=1 %then %do;
+BoDPS=&opptak2;
+%end;
+%else %do;
 BoHF=&opptak;
+%end;
 
 run;
 
@@ -213,7 +218,12 @@ andel_poli=snitt_poli/sum_poli;
 andel_inn_u=snitt_inn_u/sum_inn_u;
 andel_poli_u=snitt_poli_u/sum_poli_u;
 
+%if &dps=1 %then %do;
+BoDPS=&opptak2;
+%end;
+%else %do;
 BoHF=&opptak;
+%end;
 
 run;
 
@@ -241,39 +251,91 @@ run;
 %end;
 
 
+%if &dps=1 %then %do;
+	proc sql;
+	create table inn_&navn_opptak.1517BoDPS as
+	select distinct BoDPS, sum(innbyggere) as tot_innbyggere
+	from inn_&navn_opptak.1517
+	group by BoDPS;
+	run;
+	quit;
 
-proc sql;
-create table inn_&navn_opptak.1517BoHF as
-select distinct BoHF, sum(innbyggere) as tot_innbyggere
-from inn_&navn_opptak.1517
-group by BoHF;
-run;
-quit;
+	/*Beregner snitt for 15-17*/
+	data inn_&navn_opptak.1517BoDPS_sn;
+	set inn_&navn_opptak.1517BoDPS;
+	snitt_innbyggere=tot_innbyggere/3;
+	run;
 
-/*Beregner snitt for 15-17*/
-data inn_&navn_opptak.1517BoHF_sn;
-set inn_&navn_opptak.1517BoHF;
-snitt_innbyggere=tot_innbyggere/3;
-run;
+	proc sort data=TSBPHV1517_&navn_opptak;
+	by BoDPS;
+	quit;
 
-/*Beregner snittrater for 15-17 (per 10 000 innbyggere). Ujusterte rater.*/
-data &utdata;
-merge TSBPHV1517_&navn_opptak. inn_&navn_opptak.1517BoHF_sn;
-by BoHF;
+	proc sort data=inn_&navn_opptak.1517BoDPS_sn;
+	by BoDPS;
+	quit;
 
-sum_inn_I=10000*sum_inn/snitt_innbyggere;
-sum_poli_I=10000*sum_poli/snitt_innbyggere;
+	/*Beregner snittrater for 15-17 (per 10 000 innbyggere). Ujusterte rater.*/
+	data &utdata;
+	merge TSBPHV1517_&navn_opptak inn_&navn_opptak.1517BoDPS_sn;
+	by BoDPS;
 
-snitt_inn_I=10000*snitt_inn/snitt_innbyggere;
-snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
+	sum_inn_I=10000*sum_inn/snitt_innbyggere;
+	sum_poli_I=10000*sum_poli/snitt_innbyggere;
 
-sum_inn_u_I=10000*sum_inn_u/snitt_innbyggere;
-sum_poli_u_I=10000*sum_poli_u/snitt_innbyggere;
+	snitt_inn_I=10000*snitt_inn/snitt_innbyggere;
+	snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
 
-snitt_inn_u_I=10000*snitt_inn_u/snitt_innbyggere;
-snitt_poli_u_I=10000*snitt_poli_u/snitt_innbyggere;
+	sum_inn_u_I=10000*sum_inn_u/snitt_innbyggere;
+	sum_poli_u_I=10000*sum_poli_u/snitt_innbyggere;
 
-run;
+	snitt_inn_u_I=10000*snitt_inn_u/snitt_innbyggere;
+	snitt_poli_u_I=10000*snitt_poli_u/snitt_innbyggere;
+
+	run;
+%end;
+%else %do;
+	proc sql;
+	create table inn_&navn_opptak.1517BoHF as
+	select distinct BoHF, sum(innbyggere) as tot_innbyggere
+	from inn_&navn_opptak.1517
+	group by BoHF;
+	run;
+	quit;
+
+	/*Beregner snitt for 15-17*/
+	data inn_&navn_opptak.1517BoHF_sn;
+	set inn_&navn_opptak.1517BoHF;
+	snitt_innbyggere=tot_innbyggere/3;
+	run;
+
+	proc sort data=TSBPHV1517_&navn_opptak;
+	by BoHF;
+	quit;
+
+	proc sort data=inn_&navn_opptak.1517BoHF_sn;
+	by BoHF;
+	quit;
+
+	/*Beregner snittrater for 15-17 (per 10 000 innbyggere). Ujusterte rater.*/
+	data &utdata;
+	merge TSBPHV1517_&navn_opptak. inn_&navn_opptak.1517BoHF_sn;
+	by BoHF;
+
+	sum_inn_I=10000*sum_inn/snitt_innbyggere;
+	sum_poli_I=10000*sum_poli/snitt_innbyggere;
+
+	snitt_inn_I=10000*snitt_inn/snitt_innbyggere;
+	snitt_poli_I=10000*snitt_poli/snitt_innbyggere;
+
+	sum_inn_u_I=10000*sum_inn_u/snitt_innbyggere;
+	sum_poli_u_I=10000*sum_poli_u/snitt_innbyggere;
+
+	snitt_inn_u_I=10000*snitt_inn_u/snitt_innbyggere;
+	snitt_poli_u_I=10000*snitt_poli_u/snitt_innbyggere;
+
+	run;
+
+%end;
 
 proc datasets nolist;
 delete tsb1517: phv1517: inn_:;
