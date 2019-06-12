@@ -1,4 +1,4 @@
-%macro latex_tabell_liten(inndata=&innds, utdata=, opptak=1, dps=&dps_tab, opptak2=, navn_opptak=Finnmark, innb=&innbygg);
+%macro latex_tabell_liten(inndata=, utdata=, opptak=1, dps=, opptak2=, navn_opptak=Finnmark, innb=innbyggere_1517);
 
 proc format;
 
