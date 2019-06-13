@@ -32,9 +32,35 @@ group by boDPS;
 quit;
 run;
 
+%macro aarsrate(ds=, yr=);
+
+data &ds._&yr;
+set &ds.;
+where aar=&yr;
+run;
+
+proc sql;
+create table &ds._tot_&yr as
+select distinct boDPS, sum(&var) as var_tot_&yr
+from &ds._&yr
+group by boDPS;
+quit;
+run;
+
+%mend;
+
+%aarsrate(ds=agg_boDPS, yr=2015);
+%aarsrate(ds=agg_boDPS, yr=2016);
+%aarsrate(ds=agg_boDPS, yr=2017);
+
+data agg_boDPS_tot2;
+merge agg_boDPS_tot agg_boDPS_tot_2015 agg_boDPS_tot_2016 agg_boDPS_tot_2017;
+by boDPS;
+run;
+
 /*Lager ny boDPS variabel, grupperer alle boDPS i sør til ett boDPS.*/
 data agg_boDPS_snitt;
-set agg_boDPS_tot;
+set agg_boDPS_tot2;
 where boDPS ne .;
 
 var_snitt=var_tot/3;
@@ -50,7 +76,8 @@ run;
 /*Aggregerer på ny boDPS variabel*/
 proc sql;
 create table agg_boDPS_ny as
-select distinct boDPS_ny, sum(var_snitt) as var_snitt_ny, sum(var2_snitt) as var2_snitt_ny
+select distinct boDPS_ny, sum(var_snitt) as var_snitt_ny, sum(var2_snitt) as var2_snitt_ny, 
+sum(var_tot_2015) as var_tot_2015_ny, sum(var_tot_2016) as var_tot_2016_ny, sum(var_tot_2017) as var_tot_2017_ny
 from agg_boDPS_snitt
 group by boDPS_ny;
 quit;
@@ -72,8 +99,35 @@ group by boDPS;
 quit;
 run;
 
+
+%macro aarsrate_innb(ds=, yr=);
+
+data innbygg_boDPS_&yr;
+set &ds.;
+where aar=&yr;
+run;
+
+proc sql;
+create table innbygg_boDPS_tot_&yr as
+select distinct boDPS, sum(innbyggere) as innb_tot_&yr
+from innbygg_boDPS_&yr
+group by boDPS;
+quit;
+run;
+
+%mend;
+
+%aarsrate_innb(ds=innbyggere_1517, yr=2015);
+%aarsrate_innb(ds=innbyggere_1517, yr=2016);
+%aarsrate_innb(ds=innbyggere_1517, yr=2017);
+
+data innbygg_boDPS_tot2;
+merge innbygg_boDPS_tot innbygg_boDPS_tot_2015 innbygg_boDPS_tot_2016 innbygg_boDPS_tot_2017;
+by boDPS;
+run;
+
 data innbygg_boDPS_snitt;
-set innbygg_boDPS_tot;
+set innbygg_boDPS_tot2;
 where boDPS ne .;
 
 innb_snitt=innb_tot/3;
@@ -87,7 +141,8 @@ run;
 
 proc sql;
 create table innbygg_boDPS_ny as
-select distinct boDPS_ny, sum(innb_snitt) as innb_snitt_ny
+select distinct boDPS_ny, sum(innb_snitt) as innb_snitt_ny,
+sum(innb_tot_2015) as innb_tot_2015_ny, sum(innb_tot_2016) as innb_tot_2016_ny, sum(innb_tot_2017) as innb_tot_2017_ny
 from innbygg_boDPS_snitt
 group by boDPS_ny;
 quit;
@@ -107,11 +162,26 @@ data agg_boDPS_sn_I;
 merge agg_boDPS_ny innbygg_boDPS_ny;
 by boDPS_ny;
 
+/*Snittrate plottevariabel*/
 var_rate=10000*var_snitt_ny/innb_snitt_ny;
 var2_rate=10000*var2_snitt_ny/innb_snitt_ny;
 
+/*Snittrate ekstravariabel (for bruk i tabell)*/
 var_var2=var_rate/var2_rate;
 var2_var=var2_rate/var_rate;
+
+/*Snittrater plottevariabel pr år*/
+var_rate_2015=10000*var_tot_2015_ny/innb_tot_2015_ny;
+var_rate_2016=10000*var_tot_2016_ny/innb_tot_2016_ny;
+var_rate_2017=10000*var_tot_2017_ny/innb_tot_2017_ny;
+
+max=var_rate_2015;
+if var_rate_2016 gt max then max=var_rate_2016;
+if var_rate_2017 gt max then max=var_rate_2017;
+
+min=var_rate_2015;
+if var_rate_2016 lt min then min=var_rate_2016;
+if var_rate_2017 lt min then min=var_rate_2017;
 
 run;
 
@@ -124,6 +194,12 @@ proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%
 where BoDPS_ny le 14;
 
      hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
+
+     scatter x=var_rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
+	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
+	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
+     Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
+     keylegend "y1" "y2" "y3" / across=1 position=bottomright location=inside noborder valueattrs=(size=7pt);
 
  	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
 	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
@@ -142,7 +218,14 @@ ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
 proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
-     hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
+     hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey); 
+
+     scatter x=var_rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
+	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
+	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
+     Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
+     keylegend "y1" "y2" "y3" / across=1 position=bottomright location=inside noborder valueattrs=(size=7pt);
+ 
 
  	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
 	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
