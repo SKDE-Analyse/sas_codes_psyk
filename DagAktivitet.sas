@@ -10,7 +10,7 @@
 /*
 Nye tidsvariabler, både dato og tidspunkt på døgnet for ut og inn
 */
-data &inndata;
+data tmp;
   set &inndata;
 
   if inntid=. then inntid=0;
@@ -24,12 +24,12 @@ data &inndata;
 
 run;
 
-proc sort data=&inndata;
+proc sort data=tmp;
   by pid inndato utdatoKombi descending varighet;
 run;
 
-data &inndata;
-  set &inndata;
+data tmp;
+  set tmp;
   
   by pid inndato utdatoKombi descending varighet;
   
@@ -46,12 +46,12 @@ run;
 
 * create kontakt level information;
 
-proc sort data=&inndata;
+proc sort data=tmp;
   by pid inndato utdatoKombi institusjonID2;
 run;
  
-data &inndata;
-  set &inndata;
+data tmp;
+  set tmp;
   
  
   by pid inndato utdatoKombi institusjonID2;
@@ -67,19 +67,37 @@ data &inndata;
   KontaktNOpphold_tmp+1;
   KontaktVarighet_tmp+varighet;
 
+/*Lager BehHF_kontakt-variabel slik at den kan brukes i aggregering (egentlig kun aktuell for enkelte døgnopphold der flere HF er del av et opphold)*/
+  BehHF_kontakt=BehHF;
+
 run;
 
 /* døgn at the same institution that are less than 8 hours apart are considered as the same contact */
+/* 14/06/2019 - change the code so that overføring from other institution is also grouped together in the same Institusjonsopphold */
+/*              exception: keep public and private separated */
 
-proc sort data=&inndata (keep=pid institusjonID2 inndatotid inndato utdatotid utdatoKombi varighet erDogn oppholdsnr inndato_teller) out=dogn;
+proc sort data=tmp (keep=pid institusjonID2 inndatotid inndato utdatotid utdatoKombi varighet erDogn oppholdsnr inndato_teller sektor behHF) out=dogn;
   where erDogn=1;
-  by pid institusjonID2 inndatotid;
+  by sektor pid  inndatotid;
+run;
+
+%let filbanePSYK=\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\;
+%include "&filbanePSYK.SAS-prosjekter\sas_codes_psyk\off_priv_psyk.sas";
+%off_priv_psyk(inndata=dogn, utdata=dogn);
+
+data dogn;
+  set dogn;
+  if priv ne 1 then priv=0;
+run;
+
+proc sort data=dogn;
+  by sektor priv pid inndatotid;
 run;
 
 /* it's possible this doesn't take of more than 2 døgn to be assigned to the same kontaktID */
 data dogn/*(drop=lag_: tid_diff)*/;
   set dogn;
-  by pid InstitusjonID2 inndatotid;
+  by sektor priv pid inndatotid;
   retain KontaktID;
 
   lag_oppholdsnr=lag(oppholdsnr);
@@ -88,33 +106,62 @@ data dogn/*(drop=lag_: tid_diff)*/;
   lag_varighet=lag(varighet);
   tid_diff=inndatotid-lag_utdatotid;
 
-  /* assign a new contact id if the first instance of institution or if the stay is more than 8 hours from the last discharge */
-  /*if first.institusjonID2 or (first.institusjonID2=0 and tid_diff>28800) then do;*/
-  
-  /*assign a new contact id if the first instance of institution 
-  or if inndato for the stay is greater than (later than) utdato for the previous stay*/
-  if first.institusjonID2 or (first.institusjonID2=0 and inndato gt lag_utdatoKombi) then do;
-
-    KontaktID=pid*1000+oppholdsnr;
+   /* assign a new contact id if the first instance of institution or if the stay is more than 8 hours from the last discharge */
+  if first.pid or (first.pid=0 and tid_diff>28800) then do;
+      KontaktID=pid*1000+oppholdsnr;
 	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
 	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
   end;
-     
-  KontaktNOpphold_tmp+1;* number of opphold within each contact;
+
+    KontaktNOpphold_tmp+1;* number of opphold within each contact;
   KontaktVarighet_tmp+varighet;* contact duration - sum up duration for each opphold, even if there are overlap;
   format lag_utdatotid datetime18.;
 run;
 
+/*Kode for å velge BehHF i tilfeller der pasienten har vært overført mellom helseforetak. Opphold med lengst varighet gir gjeldende BehHF for kontakten.*/
+proc sql;
+create table BehHF as
+select KontaktID, varighet, BehHF, max(varighet) as max_varighet
+from dogn
+group by KontaktID;
+quit;
+
+data BehHF_valgt;
+set BehHF;
+where varighet=max_varighet;
+
+BehHF_kontakt=BehHF;
+
+run;
+
+data BehHF_valgt2;
+set BehHF_valgt;
+drop BehHF varighet max_varighet;
+run;
+
 proc sort data=dogn;
+by KontaktID;
+quit;
+
+proc sort data=BehHF_valgt2;
+by KontaktID;
+quit;
+
+data dogn_ny;
+merge dogn BehHF_valgt2;
+by KontaktID;
+run;
+
+proc sort data=dogn_ny;
   by pid oppholdsnr;
 run;
 
-proc sort data=&inndata;
+proc sort data=tmp;
   by pid oppholdsnr;
 run;
 
 data &inndata._2;
-  merge &inndata dogn;
+  merge tmp dogn_ny;
   by pid oppholdsnr;
 run;
 

@@ -175,6 +175,10 @@ var_rate_2015=10000*var_tot_2015_ny/innb_tot_2015_ny;
 var_rate_2016=10000*var_tot_2016_ny/innb_tot_2016_ny;
 var_rate_2017=10000*var_tot_2017_ny/innb_tot_2017_ny;
 
+if var_rate_2015=. then var_rate_2015=0;
+if var_rate_2016=. then var_rate_2016=0;
+if var_rate_2017=. then var_rate_2017=0;
+
 max=var_rate_2015;
 if var_rate_2016 gt max then max=var_rate_2016;
 if var_rate_2017 gt max then max=var_rate_2017;

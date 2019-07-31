@@ -80,6 +80,7 @@ set &inndata._&agg_var._red;
     inn = 1;
     if elektiv = 1 then inn_elektiv = 1;
     if ohjelp = 1 then inn_ohjelp = 1;
+    if privSH = 1 then inn_privSH =1;
   end;
 run;
 
@@ -122,6 +123,7 @@ run;
     SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
+    SUM(inn_privSH) as inn_privSH, 
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -149,6 +151,7 @@ run;
     SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
+    SUM(inn_privSH) as inn_privSH, 
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -176,6 +179,7 @@ run;
     SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
+    SUM(inn_privSH) as inn_privSH, 
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -198,7 +202,7 @@ run;
 
   proc sql;
     create table ut_behHF as 
-    select distinct Kontaktaar, ermann, KontaktAlder, BehHF, type_beh,
+    select distinct Kontaktaar, ermann, KontaktAlder, BehHF_kontakt, type_beh,
     SUM(inn) as inn, SUM(inn_unik_aar_inst) as inn_unik_aar_i,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
@@ -209,13 +213,14 @@ run;
     SUM(poli_psh) as poli_psh, 
     SUM(KontaktLiggetid) as liggetid
     from &inndata._&agg_var._red
-    group by Kontaktaar, ermann, KontaktAlder, BehHF, type_beh;
+    group by Kontaktaar, ermann, KontaktAlder, BehHF_kontakt, type_beh;
   quit; run;
 
   data &mappe..&utdata._behHF;
   set ut_behHF;
   aar=KontaktAar;
   alder_omkodet=KontaktAlder;
+  BehHF=BehHF_kontakt;
   run;
 
 %end;
