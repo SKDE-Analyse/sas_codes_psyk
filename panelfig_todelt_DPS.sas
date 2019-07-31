@@ -58,8 +58,7 @@ run;
 /*DEL 1*/
 
 /*Grupperer til pasientdager og institusjonsopphold, aggregerer.*/
-%DagAktivitet(inndata=&del1, utdata=&del1._DA);
-%aggreger_psyk_DA(inndata=&del1._DA, utdata=agg1, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
+%aggreger_psyk_DA(inndata=&del1, utdata=agg1, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
 
 /*Lager ny BoDPS variabel, grupperer alle BoDPS i sør til ett BoDPS.*/
 data agg1_BoDPS2;
@@ -105,8 +104,7 @@ run;
 /*DEL 2*/
 
 /*Grupperer til pasientdager og institusjonsopphold, aggregerer.*/
-%DagAktivitet(inndata=&del2, utdata=&del2._DA);
-%aggreger_psyk_DA(inndata=&del2._DA, utdata=agg2, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
+%aggreger_psyk_DA(inndata=&del2, utdata=agg2, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
 
 /*Lager ny BoDPS variabel, grupperer alle BoDPS i sør til ett BoDPS.*/
 data agg2_BoDPS2;
@@ -151,8 +149,7 @@ run;
 /*ALLE*/
 
 /*Grupperer til pasientdager og institusjonsopphold, agg3regerer.*/
-%DagAktivitet(inndata=&tot, utdata=&tot._DA);
-%aggreger_psyk_DA(inndata=&tot._DA, utdata=agg3, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
+%aggreger_psyk_DA(inndata=&tot, utdata=agg3, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
 
 /*Lager ny BoDPS variabel, grupperer alle BoDPS i sør til ett BoDPS.*/
 data agg3_BoDPS2;
