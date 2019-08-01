@@ -1,4 +1,4 @@
-%macro ratefig_BoDPS(inndata=, var=poli, var2=poli_unik_aar, utfil_navn=);
+%macro ratefig_BoDPS(inndata=, var=poli, var2=poli_unik_aar, utfil_navn=, aggvar=alle);
 
 proc format;
 
@@ -21,7 +21,7 @@ value BoDPS_ny
 
 /*Grupperer til pasientdager og institusjonsopphold, aggregerer.*/
 %DagAktivitet(inndata=&inndata, utdata=&inndata._DA);
-%aggreger_psyk_DA(inndata=&inndata._DA, utdata=agg, agg_var=alle, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
+%aggreger_psyk_DA(inndata=&inndata._DA, utdata=agg, agg_var=&aggvar, ut_boHF=0, ut_BehHF=0, ut_boDPS=1);
 
 /*Summerer for årene 15-17*/
 proc sql;
@@ -190,10 +190,10 @@ if var_rate_2017 lt min then min=var_rate_2017;
 run;
 
 /*Lager figurer*/
-%let mappe=Ratefigurer\png\;
+%let mappe_png=&mappe.\png\;
 
 ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=png border=off ;
-ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
+ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_png";
 proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
@@ -203,7 +203,7 @@ where BoDPS_ny le 14;
 	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
 	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
      Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
-     keylegend "y1" "y2" "y3" / across=1 position=bottomright location=inside noborder valueattrs=(size=7pt);
+     keylegend "y1" "y2" "y3" / across=3 position=bottom location=outside noborder valueattrs=(size=7pt);
 
  	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
 	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
@@ -215,10 +215,10 @@ format &formattabell;
 
 run;Title; ods listing close;
 
-%let mappe=Ratefigurer\pdf\;
+%let mappe_pdf=&mappe.\pdf\;
 
 ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=pdf border=off ;
-ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
+ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_pdf";
 proc sgplot data=agg_boDPS_sn_I noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
@@ -228,7 +228,7 @@ where BoDPS_ny le 14;
 	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
 	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
      Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
-     keylegend "y1" "y2" "y3" / across=1 position=bottomright location=inside noborder valueattrs=(size=7pt);
+     keylegend "y1" "y2" "y3" / across=3 position=bottom location=outside noborder valueattrs=(size=7pt);
  
 
  	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
