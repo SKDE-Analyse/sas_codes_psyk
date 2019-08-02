@@ -4,10 +4,10 @@ proc format;
 
 value BehHF_type
 1='Eget HF'
-2='Annet HF, HN'
-3='Off. utenfor HN'
+2='Annet i HN'
+3='Utenfor HN'
 4='Privat'
-5='Avtalespesialist';
+5='Avt. spes.';
 
 /*Bosatte i angitt opptaksområde*/
 

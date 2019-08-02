@@ -8,11 +8,11 @@ value BoDPS_ny
 3='Vest-Finnmark'
 4='Nord-Troms'
 5='Midt-Troms'
-6='Tromsø og omegn'
+6='Tromsø'
 7='Sør-Troms'
 8='Ofoten'
 9='Vesterålen'
-10='Salten (inkl Tysfjord)'
+10='Salten'
 11='Lofoten'
 12= "Mo i Rana"
 13= "Mosjøen"
