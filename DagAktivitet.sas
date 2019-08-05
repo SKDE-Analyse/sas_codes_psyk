@@ -91,31 +91,37 @@ data dogn;
 run;
 
 proc sort data=dogn;
-  by sektor priv pid inndatotid;
+  by sektor priv pid inndatotid utdatoKombi;
 run;
 
 /* it's possible this doesn't take of more than 2 døgn to be assigned to the same kontaktID */
 data dogn/*(drop=lag_: tid_diff)*/;
   set dogn;
-  by sektor priv pid inndatotid;
-  retain KontaktID;
+  by sektor priv pid inndatotid utdatoKombi;
+  retain KontaktID cross_ny;
 
   lag_oppholdsnr=lag(oppholdsnr);
   lag_utdatotid=lag(utdatotid);
+  lag_inndatotid=lag(inndatotid);
   lag_utdatoKombi=lag(utdatoKombi);
   lag_varighet=lag(varighet);
   tid_diff=inndatotid-lag_utdatotid;
 
-   /* assign a new contact id if the first instance of institution or if the stay is more than 8 hours from the last discharge */
-  if first.pid or (first.pid=0 and tid_diff>28800) then do;
+   /* assign a new contact id if 
+   A: the first instance of institution or 
+   B: if the stay is more than 8 hours from the last discharge or
+   C: The stay crosses newyear (and has a duplicate contact in the next year)*/
+  if first.pid or (first.pid=0 and tid_diff>28800) or (inndatotid=lag_inndatotid and lag_utdatotid in ('31DEC15:00:00:00'dt,'31DEC16:00:00:00'dt)) then do;
       KontaktID=pid*1000+oppholdsnr;
+    cross_ny=.;
 	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
 	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
+    if inndatotid=lag_inndatotid and lag_utdatotid in ('31DEC15:00:00:00'dt,'31DEC16:00:00:00'dt) then cross_ny=1;
   end;
 
     KontaktNOpphold_tmp+1;* number of opphold within each contact;
   KontaktVarighet_tmp+varighet;* contact duration - sum up duration for each opphold, even if there are overlap;
-  format lag_utdatotid datetime18.;
+  format lag_utdatotid lag_inndatotid datetime18.;
 run;
 
 /*Kode for å velge BehHF i tilfeller der pasienten har vært overført mellom helseforetak. Opphold med lengst varighet gir gjeldende BehHF for kontakten.*/
@@ -179,8 +185,23 @@ QUIT;
 data &utdata;
   set &utdata(drop=KontaktNOpphold_tmp KontaktVarighet_tmp);
   
+  /*If stay crosses new year then only count from jan 1*/
+  if cross_ny=1 then do;
+    if KontaktAar=2016 then do;
+      KontaktInndatotid='1JAN16:00:00:00'dt;
+      KontaktInndato='1JAN16'd;
+    end;
+    if KontaktAar=2017 then do;
+      KontaktInndatotid='1JAN17:00:00:00'dt;
+      KontaktInndato='1JAN17'd;
+    end;
+  end;
+
   KontaktTotTimer=KontaktUtdatotid-KontaktInndatotid;
   KontaktLiggetid=KontaktUtdato-KontaktInndato;
+
+/*No stay can have more then 365 days of liggetid.*/
+  if KontaktLiggetid gt 365 then KontaktLiggetid=365;
   
   format KontaktInndatotid KontaktUtdatotid datetime18.;
   format KontaktInndato    KontaktUtdato    date10.;
