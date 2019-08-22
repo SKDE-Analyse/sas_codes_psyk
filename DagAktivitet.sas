@@ -1,7 +1,7 @@
 %macro DagAktivitet(inndata=, utdata=);
 
 
-/* Create a new variable, KontaktID, to identify contacts per pid per dag per institusjonID2 */
+/* Create a new variable, KontaktID, to identify contacts per pid per dag per behandlende institusjon */
 
 /* If a pid has dag/poli during the day, they are considered together in the same KontaktID,
    and if the same pid has an overnight stay on the same day, that is considered as another KontaktID */
@@ -22,8 +22,13 @@ data tmp;
 
   varighet=utdatotid-inndatotid;
 
+/*Variabel som identifiserer behandlende institusjon, til bruk i def. av pasientdag.*/
+  if BehHF in (1,2,3,4) then sep_inst=institusjon;
+  else sep_inst=institusjonID2;
+
 run;
 
+/*Lager tellevariabler oppholdsnr og inndato_teller*/
 proc sort data=tmp;
   by pid inndato utdatoKombi descending varighet;
 run;
@@ -47,18 +52,18 @@ run;
 * create kontakt level information;
 
 proc sort data=tmp;
-  by pid inndato utdatoKombi institusjonID2;
+  by pid inndato utdatoKombi sep_inst;
 run;
  
 data tmp;
   set tmp;
   
  
-  by pid inndato utdatoKombi institusjonID2;
+  by pid inndato utdatoKombi sep_inst;
   retain kontaktID; 
   
-  * assign kontaktID for opphold within the same day, within the same institution;
-  if first.institusjonID2 then do;
+  * assign kontaktID for opphold within the same day, within the same institution (def. by sep_inst);
+  if first.sep_inst then do;
     KontaktID=pid*1000+oppholdsnr;
 	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
 	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
@@ -73,8 +78,9 @@ data tmp;
 run;
 
 /* døgn at the same institution that are less than 8 hours apart are considered as the same contact */
-/* 14/06/2019 - change the code so that overføring from other institution is also grouped together in the same Institusjonsopphold */
-/*              exception: keep public and private separated */
+/* 14/06/2019 - change the code so that transfers from other institution is also grouped together in the same Institusjonsopphold if:*/
+/* 1 the stays are all in the same sector (handled by sorting data by sektor)
+   2 the stays are all in a public hospital (handled by sorting data by variable sep, created below*/
 
 proc sort data=tmp (keep=pid institusjonID2 inndatotid inndato utdatotid utdatoKombi varighet erDogn oppholdsnr inndato_teller sektor behHF) out=dogn;
   where erDogn=1;
@@ -88,16 +94,21 @@ run;
 data dogn;
   set dogn;
   if priv ne 1 then priv=0;
+
+  /*lager ny variabel som ikke skiller off. institusjoner, men skiller private institusjoner*/
+  if priv=0 then sep=112233445;
+  else if priv=1 then sep=institusjonID2;
+
 run;
 
 proc sort data=dogn;
-  by sektor priv pid inndatotid utdatoKombi;
+  by sektor sep pid inndatotid utdatoKombi;
 run;
 
 /* it's possible this doesn't take of more than 2 døgn to be assigned to the same kontaktID */
 data dogn/*(drop=lag_: tid_diff)*/;
   set dogn;
-  by sektor priv pid inndatotid utdatoKombi;
+  by sektor sep pid inndatotid utdatoKombi;
   retain KontaktID cross_ny;
 
   lag_oppholdsnr=lag(oppholdsnr);
@@ -108,9 +119,8 @@ data dogn/*(drop=lag_: tid_diff)*/;
   tid_diff=inndatotid-lag_utdatotid;
 
    /* assign a new contact id if 
-   A: the first instance of institution or 
-   B: if the stay is more than 8 hours from the last discharge or
-   C: The stay crosses newyear (and has a duplicate contact in the next year)*/
+   A: if the stay is more than 8 hours from the last discharge or
+   B: The stay crosses newyear (and has a duplicate contact in the next year)*/
   if first.pid or (first.pid=0 and tid_diff>28800) or (inndatotid=lag_inndatotid and lag_utdatotid in ('31DEC15:00:00:00'dt,'31DEC16:00:00:00'dt)) then do;
       KontaktID=pid*1000+oppholdsnr;
     cross_ny=.;
@@ -184,6 +194,12 @@ QUIT;
 
 data &utdata;
   set &utdata(drop=KontaktNOpphold_tmp KontaktVarighet_tmp);
+
+  /*If inndato is before jan 1 2015 then Kontaktinndato is set to jan 1 2015 to ensure correct liggetid for 2015*/
+  if KontaktInndato lt '1JAN15'd then do;
+    KontaktInndatotid='1JAN15:00:00:00'dt;
+    KontaktInndato='1JAN15'd;
+  end;
   
   /*If stay crosses new year then only count from jan 1*/
   if cross_ny=1 then do;
