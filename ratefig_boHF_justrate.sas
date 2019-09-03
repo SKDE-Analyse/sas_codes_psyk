@@ -26,92 +26,6 @@ run;
 %Let forbruksmal = &utfil_navn; /*Brukes til å lage tabell-overskrift i Årsvarfig, gir også navn til 'ut'-datasett*/
 %include "&filbane\rateprogram\rateprogram.sas";
 
-/*Summerer for årene 15-17*/
-proc sql;
-create table agg_boHF_tot as
-select distinct boHF, sum(&var) as var_tot
-from agg_boHF
-group by boHF;
-quit;
-run;
-
-/*Lager ny boHF variabel, grupperer alle boHF i sør til ett boHF.*/
-data agg_boHF_snitt;
-set agg_boHF_tot;
-where boHF ne .;
-
-var_snitt=var_tot/3;
-
-if boHF gt 4 then boHF_ny=5;
-else boHF_ny=boHF;
-
-format boHF_ny boHF_ny.;
-
-run;
-
-/*Aggregerer på ny boHF variabel*/
-proc sql;
-create table agg_boHF_ny as
-select distinct boHF_ny, sum(var_snitt) as var_snitt_ny
-from agg_boHF_snitt
-group by boHF_ny;
-quit;
-run;
-
-/*Beregner innbyggertall på ny boHF variabel*/
-
-data innbyggere_1517;
-set innbygg.innb_2004_2017_bydel_allebyer;
-where aar in (2015, 2016, 2017) and alder ge 18;
-%boomraaderPsyk;
-run;
-
-proc sql;
-create table innbygg_boHF_tot as
-select distinct boHF, sum(innbyggere) as innb_tot
-from innbyggere_1517
-group by boHF;
-quit;
-run;
-
-data innbygg_boHF_snitt;
-set innbygg_boHF_tot;
-where boHF ne .;
-
-innb_snitt=innb_tot/3;
-
-if boHF gt 4 then boHF_ny=5;
-else boHF_ny=boHF;
-
-format boHF_ny boHF_ny.;
-
-run;
-
-proc sql;
-create table innbygg_boHF_ny as
-select distinct boHF_ny, sum(innb_snitt) as innb_snitt_ny
-from innbygg_boHF_snitt
-group by boHF_ny;
-quit;
-run;
-
-
-/*Setter sammen datasett med aggregerte tall og innbyggertall og beregner ujustert rate.*/
-proc sort data=agg_boHF_ny;
-by boHF_ny;
-quit;
-
-proc sort data=innbygg_boHF_ny;
-by boHF_ny;
-quit;
-
-data agg_boHF_sn_I;
-merge agg_boHF_ny innbygg_boHF_ny;
-by boHF_ny;
-
-var_rate=10000*var_snitt_ny/innb_snitt_ny;
-
-run;
 
 /* save the rateprogram output to the same file structure as the unadjusted rates files so that we can use the same lager figurer codes */
 data agg_bohf_sn_I_justrate;
@@ -121,6 +35,10 @@ data agg_bohf_sn_I_justrate;
 run;
 
 /*Lager figurer*/
+
+proc sort data=agg_boHF_sn_I_justrate;
+ by descending var_rate;
+run;
 
 %let mappe=Ratefigurer\png\justrate\;
 
