@@ -63,7 +63,7 @@ run;
 data &inndata._&agg_var;
 set &inndata;
 by &agg_var pid kontaktID;
-where &agg_var=1;
+where &agg_var=1 and Ptakst=1;
 if first.kontaktID then behold=1;
 run;
 
@@ -110,6 +110,7 @@ run;
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_off);
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_priv);
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = inn);
+%unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = inn_off);
 
 /*Teller unike pasienter for utdata på behandler*/
 %unik_pas_aar_inst(datasett = &inndata._&agg_var._red, variabel = poli);
@@ -125,7 +126,7 @@ run;
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
-    SUM(inn_off) as inn_off,
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -154,7 +155,7 @@ run;
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
-    SUM(inn_off) as inn_off,
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -183,7 +184,7 @@ run;
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
-        SUM(inn_off) as inn_off,
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
