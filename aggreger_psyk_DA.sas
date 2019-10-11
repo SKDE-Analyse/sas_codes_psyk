@@ -16,14 +16,14 @@ Ny variabel, &variabel._unik_aar, lages i samme datasett
 
 /*1. Sorter på år, aktuell hendelse (merkevariabel), PID, kontaktID;*/
 proc sort data=&datasett;
-by aar &variabel pid;
+by KontaktAar &variabel pid;
 run;
 
 /*2. By-statement sørger for at riktig opphold med hendelse velges i kombinasjon med First.-funksjonen og betingelse på hendelse*/
 data &datasett;
 set &datasett;
 &variabel._unik_aar = .;
-by aar &variabel pid;
+by KontaktAar &variabel pid;
 if first.pid and &variabel = 1 then &variabel._unik_aar = 1;	
 run;
 
@@ -42,14 +42,14 @@ Macroen er testet og fungerer som ønsket.
 
 /*1. Sorter på år, aktuell hendelse (merkevariabel), PID, kontaktID;*/
 proc sort data=&datasett;
-by aar &variabel pid behHF;
+by KontaktAar &variabel pid behHF;
 run;
 
 /*2. By-statement sørger for at riktig opphold med hendelse velges i kombinasjon med First.-funksjonen og betingelse på hendelse*/
 data &datasett;
 set &datasett;
 &variabel._unik_aar_inst = .;
-by aar &variabel pid behHF;
+by KontaktAar &variabel pid behHF;
 if first.behHF and &variabel = 1 then &variabel._unik_aar_inst = 1;	
 run;
 
@@ -63,7 +63,7 @@ run;
 data &inndata._&agg_var;
 set &inndata;
 by &agg_var pid kontaktID;
-where &agg_var=1;
+where &agg_var=1 and Ptakst=1;
 if first.kontaktID then behold=1;
 run;
 
@@ -81,6 +81,7 @@ set &inndata._&agg_var._red;
     if elektiv = 1 then inn_elektiv = 1;
     if ohjelp = 1 then inn_ohjelp = 1;
     if privSH = 1 then inn_privSH =1;
+    if off=1 then inn_off=1;
   end;
 run;
 
@@ -109,6 +110,7 @@ run;
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_off);
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = poli_priv);
 %unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = inn);
+%unik_pasient_aar(datasett = &inndata._&agg_var._red, variabel = inn_off);
 
 /*Teller unike pasienter for utdata på behandler*/
 %unik_pas_aar_inst(datasett = &inndata._&agg_var._red, variabel = poli);
@@ -118,12 +120,14 @@ run;
 
   proc sql;
     create table ut_komnr as 
-    select distinct Kontaktaar, ermann, KontaktAlder, komnr, bydel, borhf,
+    select distinct Kontaktaar, ermann, KontaktAlder, komnr, bydel, borhf, bohf, bodps,
+    sum(tot) as tot,
     SUM(tot_unik_aar) as tot_unik_aar,
     SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -152,6 +156,7 @@ run;
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,
@@ -180,6 +185,7 @@ run;
     SUM(inn_elektiv) as inn_elek, 
     SUM(inn_ohjelp) as inn_ohj, 
     SUM(inn_privSH) as inn_privSH, 
+    SUM(inn_off) as inn_off,SUM(inn_off_unik_aar) as inn_off_unik_aar,
     SUM(poli) as poli, SUM(poli_unik_aar) as poli_unik_aar,
     SUM(poli_off) as poli_off, SUM(poli_off_unik_aar) as poli_off_unik_aar,
     SUM(poli_priv) as poli_priv, SUM(poli_priv_unik_aar) as poli_priv_unik_aar,

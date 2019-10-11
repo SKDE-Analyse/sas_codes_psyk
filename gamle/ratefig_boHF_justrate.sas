@@ -1,8 +1,4 @@
-/*  This macro takes the kontaktID that is definied using Ptakst (Not pasientdager)
-    runs rateprogram for var (poli, poli_unik_aar, tot, tot_unik_aar, etc)
-    creates figures with adjusted rates for each boHF*/
-
-%macro ratefig_BoHF(inndata=, var=poli, utfil_navn=);
+%macro ratefig_BoHF_justrate(inndata=, var=poli, utfil_navn=);
 
 proc format;
 
@@ -14,7 +10,7 @@ Value BoHF_ny
 5='Utenfor HN';
 
 /*Grupperer til pasientdager og institusjonsopphold, aggregerer.*/
-%DagAktivitet_Ptakst(inndata=&inndata, utdata=&inndata._DA);
+%DagAktivitet(inndata=&inndata, utdata=&inndata._DA);
 %aggreger_psyk_DA(inndata=&inndata._DA, utdata=agg, agg_var=alle, ut_boHF=1, ut_BehHF=0, ut_komnr=1, ut_boDPS=0);
 
 data agg_komnr;

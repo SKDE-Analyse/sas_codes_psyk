@@ -28,8 +28,8 @@ where sektor=1 and BoHF=&opptak;
 run;
 %end;
 
-/*Grupperer sammen dag/poli-opphold og innleggelser til pasientdager og institusjonsopphold*/
-%DagAktivitet(inndata=tsb1517_&navn_opptak, utdata=tsb1517_DA);
+/*Grupperer sammen dag/poli-opphold og innleggelser til polikliniske kontakter og institusjonsopphold*/
+%DagAktivitet_ikke_overf(inndata=tsb1517_&navn_opptak, utdata=tsb1517_DA);
 /*Aggregerer*/
 %aggreger_psyk_DA(inndata=tsb1517_DA, utdata=tsb1517_agg, agg_var=alle);
 
@@ -122,7 +122,7 @@ where sektor=2 and BoHF=&opptak;
 run;
 %end;
 
-%DagAktivitet(inndata=phv1517_&navn_opptak, utdata=phv1517_DA);
+%DagAktivitet_ikke_overf(inndata=phv1517_&navn_opptak, utdata=phv1517_DA);
 %aggreger_psyk_DA(inndata=phv1517_DA, utdata=phv1517_agg, agg_var=alle);
 
 data phv1517_agg_BehHF;
@@ -159,7 +159,7 @@ where sektor=4 and BoHF=&opptak;
 run;
 %end;
 
-%DagAktivitet(inndata=phv1517_&navn_opptak._AS, utdata=phv1517_AS_DA);
+%DagAktivitet_ikke_overf(inndata=phv1517_&navn_opptak._AS, utdata=phv1517_AS_DA);
 %aggreger_psyk_DA(inndata=phv1517_AS_DA, utdata=phv1517_AS_agg, agg_var=alle);
 
 data phv1517_AS_agg_BehHF;

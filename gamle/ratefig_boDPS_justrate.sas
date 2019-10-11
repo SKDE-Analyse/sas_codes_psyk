@@ -1,13 +1,8 @@
-/*  This macro takes the kontaktID that is definied using Ptakst (Not pasientdager)
-    runs rateprogram 2 times with each of var and var2 
-    creates figures with adjusted rates */
-
-%macro ratefig_BoDPS(inndata=, var=poli, var2=poli_unik_aar, utfil_navn=, aggvar=alle);
+%macro ratefig_BoDPS_justrate(inndata=, var=poli, var2=poli_unik_aar, utfil_navn=, aggvar=alle);
 
 proc format;
 
 value BoDPS_ny
-
 1='Øst-Finnmark'
 2='Midt-Finnmark'
 3='Vest-Finnmark'
@@ -24,9 +19,7 @@ value BoDPS_ny
 14= "Ytre Helgeland"
 15= "Utenfor HN";
 
-
-
-/*Grupperer til kontakter med Ptakst og institusjonsopphold, aggregerer.*/
+/*Grupperer til pasientdager og institusjonsopphold, aggregerer.*/
 %DagAktivitet_Ptakst(inndata=&inndata, utdata=&inndata._DA);
 %aggreger_psyk_DA(inndata=&inndata._DA, utdata=agg, agg_var=&aggvar, ut_boHF=0, ut_BehHF=0, ut_komnr=1, ut_boDPS=1);
 
@@ -36,17 +29,17 @@ data agg_komnr;
   aar=kontaktAar;
 run;
 
-/*Kj?rer rateprogram for å få justert rate*/
+/*Kjører rateprogram for å få justert rate*/
 %let ratefil=agg_komnr;
 %let RV_variabelnavn=&var; /*navn på ratevariabel i det aggregerte datasettet*/
 %Let ratevariabel = &var; /*Brukes til å lage "pene" overskrifter*/
-%let forbruksmal = var_&utfil_navn; /*Brukes Brukes til å lage "pene" -datasett*/
+%let forbruksmal = var_&utfil_navn; /*Brukes til å lage tabell-overskrift i Årsvarfig, gir også navn til 'ut'-datasett*/
 %include "&filbane\rateprogram\rateprogram.sas";
 
 %let ratefil=agg_komnr;
 %let RV_variabelnavn=&var2; /*navn på ratevariabel i det aggregerte datasettet*/
 %Let ratevariabel = &var2; /*Brukes til å lage "pene" overskrifter*/
-%let forbruksmal = var2_&utfil_navn; /*Brukes til ? lage tabell-overskrift i ?rsvarfig, gir ogs? navn til 'ut'-datasett*/
+%let forbruksmal = var2_&utfil_navn; /*Brukes til å lage tabell-overskrift i Årsvarfig, gir også navn til 'ut'-datasett*/
 %include "&filbane\rateprogram\rateprogram.sas";
 
 
@@ -100,39 +93,55 @@ proc sort data=&utfil_navn;
  by descending var_rate;
 run;
 
-%macro plot_ratefig(fmt=);
-/* fmt = png eller pdf */
-
-
-ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=&fmt border=off ;
-ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe.\&fmt";
+%let mappe_png=&mappe.\png\justrate;
+ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=png border=off ;
+ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_png";
 proc sgplot data=&utfil_navn noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
      hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey);  
 
      scatter x=var_rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
-	   scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
-     scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
-
+	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
+	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
      Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
      keylegend "y1" "y2" "y3" / across=3 position=bottom location=outside noborder valueattrs=(size=7pt);
 
- 	   *yaxis min=24 display=(noticks noline) label='Opptaksområdene' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
-	   yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
+ 	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
+	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
      xaxis  offsetmin=0 offsetmax=0.02  valueattrs=(size=8) label="&xlabel" labelattrs=(size=8 weight=bold);
      Yaxistable &hoyretabell /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
-     
 	 label &labeltabell;
 
 format &formattabell;
 
 run;Title; ods listing close;
 
-%mend;
 
-%plot_ratefig(fmt=png);
-%plot_ratefig(fmt=pdf);
+%let mappe_pdf=&mappe.\pdf\justrate;
+ODS Graphics ON /reset=All imagename="&utfil_navn._DPS" imagefmt=pdf border=off ;
+ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_pdf";
+proc sgplot data=&utfil_navn noborder noautolegend sganno=anno pad=(Bottom=5%);
+where BoDPS_ny le 14;
+
+     hbarparm category=boDPS_ny response=var_rate / fillattrs=(color=CX95BDE6) missing outlineattrs=(color=grey); 
+
+     scatter x=var_rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
+	scatter x=var_rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
+	scatter x=var_rate_2015 y=boDPS_ny / markerattrs=(symbol=circlefilled color=black size=5pt) name="y1" legendlabel="2015";
+     Highlow Y=BoDPS_ny low=Min high=Max / type=line name="hl2" lineattrs=(color=black thickness=1 pattern=1); 
+     keylegend "y1" "y2" "y3" / across=3 position=bottom location=outside noborder valueattrs=(size=7pt);
+ 
+
+ 	     *yaxis min=24 display=(noticks noline) label='Opptaksområde' labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=8);
+	 yaxis display=(noticks noline) label='Bosatte i opptaksområdene' labelpos=top labelattrs=(size=8 weight=bold) type=discrete discreteorder=data valueattrs=(size=9);
+     xaxis  offsetmin=0 offsetmax=0.02  valueattrs=(size=8) label="&xlabel" labelattrs=(size=8 weight=bold);
+      Yaxistable &hoyretabell /Label location=inside labelpos=top position=right valueattrs=(size=9 family=arial) labelattrs=(size=9);
+	 label &labeltabell;
+
+format &formattabell;
+
+run;Title; ods listing close;
 
 
 

@@ -136,7 +136,7 @@ ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
 
 proc sgpanel data=hf_&figtittel noautolegend sganno=&anno pad=(Bottom=5%);
 PANELBY BoDPS_ny / columns=7 rows=2 novarname spacing=2 HEADERATTRS=(Color=black Family=Arial Size=8) noheaderborder;
-vbarparm category=aar response=RV_rate_tot / outlineattrs=(thickness=1 color=bgr) fillattrs=(color=CX568BBF) missing ;
+vbarparm category=aar response=RV_rate_tot / outlineattrs=(thickness=1 color=bgr) fillattrs=(color=CX95BDE6) missing ;
 /*series x=aar y=Norge_rate_tot /lineattrs=(color=black pattern=1 thickness=2) name="norge" legendlabel="Norge";*/
 colaxis fitpolicy=thin display=(nolabel) valueattrs=(size=8);
 rowaxis label="&xlabel" valueattrs=(size=8) labelattrs=(size=8)  ;
@@ -151,7 +151,7 @@ ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe";
 
 proc sgpanel data=hf_&figtittel noautolegend sganno=&anno pad=(Bottom=5%);
 PANELBY BoDPS_ny / columns=7 rows=2 novarname spacing=2 HEADERATTRS=(Color=black Family=Arial Size=8) noheaderborder;
-vbarparm category=aar response=RV_rate_tot / outlineattrs=(thickness=1 color=bgr) fillattrs=(color=CX568BBF) missing ;
+vbarparm category=aar response=RV_rate_tot / outlineattrs=(thickness=1 color=bgr) fillattrs=(color=CX95BDE6) missing ;
 /*series x=aar y=Norge_rate_tot /lineattrs=(color=black pattern=1 thickness=2) name="norge" legendlabel="Norge";*/
 colaxis fitpolicy=thin display=(nolabel) valueattrs=(size=8) ;
 rowaxis label="&xlabel" valueattrs=(size=8) labelattrs=(size=8)  ;

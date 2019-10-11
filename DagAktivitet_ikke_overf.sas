@@ -1,4 +1,4 @@
-%macro DagAktivitet(inndata=, utdata=);
+%macro DagAktivitet_ikke_overf(inndata=, utdata=);
 
 
 /* Create a new variable, KontaktID, to identify contacts per pid per dag per behandlende institusjon */
@@ -21,10 +21,9 @@ data tmp;
   format inndatotid utdatotid datetime18.;
 
   varighet=utdatotid-inndatotid;
-
-/*Variabel som identifiserer behandlende institusjon, til bruk i def. av pasientdag.*/
-  if BehHF in (1,2,3,4) then sep_inst=institusjon;
-  else sep_inst=institusjonID2;
+  
+  /*Lager BehHF_kontakt-variabel slik at den kan brukes i aggregering*/
+  BehHF_kontakt=BehHF;
 
 run;
 
@@ -37,6 +36,22 @@ data tmp;
   set tmp;
   
   by pid inndato utdatoKombi descending varighet;
+
+/*Setter variabel Ptakst=1 på alle kontakter med takst*/  
+
+if sektor =2 then do;
+	if (erDogn=1 or indirekte=1) then Ptakst=1;
+	else do;
+	  array takst {*} Takst:;
+		do i=1 to dim(takst);
+		if substr(takst{i},1,1) = ("P") then Ptakst=1;
+		end;
+	end;
+end;
+	
+	/*For kontakter hos avtalespesialist eller i TSB skal alle kontakter telles, 
+	setter derfor Ptakst=1 som default for disse sektorene*/
+	if sektor in (1,4) then Ptakst=1;
   
   * each pid receives sequencial numbers for all opphold;
   if first.pid=1 then oppholdsnr=0;
@@ -52,39 +67,28 @@ run;
 * create kontakt level information;
 
 proc sort data=tmp;
-  by pid inndato utdatoKombi sep_inst;
+  by pid inndato utdatoKombi;
 run;
  
 data tmp;
   set tmp;
   
- 
-  by pid inndato utdatoKombi sep_inst;
-  retain kontaktID; 
-  
-  * assign kontaktID for opphold within the same day, within the same institution (def. by sep_inst);
-  if first.sep_inst then do;
+   by pid inndato utdatoKombi;
+    
     KontaktID=pid*1000+oppholdsnr;
-	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
-	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
-  end;
-  
-  KontaktNOpphold_tmp+1;
-  KontaktVarighet_tmp+varighet;
+  KontaktNOpphold_tmp=0;* number of opphold within each contact;
+  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
 
-/*Lager BehHF_kontakt-variabel slik at den kan brukes i aggregering (egentlig kun aktuell for enkelte døgnopphold der flere HF er del av et opphold)*/
-  BehHF_kontakt=BehHF;
+    KontaktNOpphold_tmp+1;
+  KontaktVarighet_tmp+varighet;
 
 run;
 
 /* døgn at the same institution that are less than 8 hours apart are considered as the same contact */
-/* 14/06/2019 - change the code so that transfers from other institution is also grouped together in the same Institusjonsopphold if:*/
-/* 1 the stays are all in the same sector (handled by sorting data by sektor)
-   2 the stays are all in a public hospital (handled by sorting data by variable sep, created below*/
 
 proc sort data=tmp (keep=pid institusjonID2 inndatotid inndato utdatotid utdatoKombi varighet erDogn oppholdsnr inndato_teller sektor behHF) out=dogn;
   where erDogn=1;
-  by sektor pid  inndatotid;
+  by sektor pid institusjonID2 inndatotid;
 run;
 
 %let filbanePSYK=\\hn.helsenord.no\RHF\SKDE\Analyse\Prosjekter\2019_Psyk_HN\;
@@ -95,8 +99,8 @@ data dogn;
   set dogn;
   if priv ne 1 then priv=0;
 
-  /*lager ny variabel som ikke skiller off. institusjoner, men skiller private institusjoner*/
-  if priv=0 then sep=112233445;
+  /*lager ny variabel som skiller mellom HF og ulike private institusjoner*/
+  if priv=0 then sep=(BehHF*10000000) + 10000;
   else if priv=1 then sep=institusjonID2;
 
 run;
@@ -121,12 +125,12 @@ data dogn/*(drop=lag_: tid_diff)*/;
    /* assign a new contact id if 
    A: if the stay is more than 8 hours from the last discharge or
    B: The stay crosses newyear (and has a duplicate contact in the next year)*/
-  if first.pid or (first.pid=0 and tid_diff>28800) or (inndatotid=lag_inndatotid and lag_utdatotid in ('31DEC15:00:00:00'dt,'31DEC16:00:00:00'dt)) then do;
+  if first.pid or (first.pid=0 and tid_diff>24*60*60) or (inndatotid=lag_inndatotid and (year(utdatoKombi) > year(inndato))) then do;
       KontaktID=pid*1000+oppholdsnr;
     cross_ny=.;
 	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
 	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
-    if inndatotid=lag_inndatotid and lag_utdatotid in ('31DEC15:00:00:00'dt,'31DEC16:00:00:00'dt) then cross_ny=1;
+    if inndatotid=lag_inndatotid and (year(utdatoKombi) > year(inndato)) then cross_ny=1;
   end;
 
     KontaktNOpphold_tmp+1;* number of opphold within each contact;
@@ -134,41 +138,7 @@ data dogn/*(drop=lag_: tid_diff)*/;
   format lag_utdatotid lag_inndatotid datetime18.;
 run;
 
-/*Kode for å velge BehHF i tilfeller der pasienten har vært overført mellom helseforetak. Opphold med lengst varighet gir gjeldende BehHF for kontakten.*/
-proc sql;
-create table BehHF as
-select KontaktID, varighet, BehHF, max(varighet) as max_varighet
-from dogn
-group by KontaktID;
-quit;
-
-data BehHF_valgt;
-set BehHF;
-where varighet=max_varighet;
-
-BehHF_kontakt=BehHF;
-
-run;
-
-data BehHF_valgt2;
-set BehHF_valgt;
-drop BehHF varighet max_varighet;
-run;
-
 proc sort data=dogn;
-by KontaktID;
-quit;
-
-proc sort data=BehHF_valgt2;
-by KontaktID;
-quit;
-
-data dogn_ny;
-merge dogn BehHF_valgt2;
-by KontaktID;
-run;
-
-proc sort data=dogn_ny;
   by pid oppholdsnr;
 run;
 
@@ -177,7 +147,7 @@ proc sort data=tmp;
 run;
 
 data &inndata._2;
-  merge tmp dogn_ny;
+  merge tmp dogn;
   by pid oppholdsnr;
 run;
 
@@ -213,15 +183,36 @@ data &utdata;
     end;
   end;
 
+  if  aar < year(KontaktUtdato) then do;
+    if year(KontaktInndato)=2015 then do;
+       KontaktUtdatotid='31DEC15:00:00:00'dt;
+       KontaktUtdato='31DEC15'd;
+    end;
+    if year(inndato)=2016 then do;
+       KontaktUtdatotid='31DEC16:00:00:00'dt;
+       KontaktUtdato='31DEC16'd;
+    end;
+    if year(inndato)=2017 then do;
+       KontaktUtdatotid='31DEC17:00:00:00'dt;
+       KontaktUtdato='31DEC17'd;
+    end;
+  end;
+
   KontaktTotTimer=KontaktUtdatotid-KontaktInndatotid;
   KontaktLiggetid=KontaktUtdato-KontaktInndato;
 
 /*No stay can have more then 365 days of liggetid.*/
   if KontaktLiggetid gt 365 then KontaktLiggetid=365;
   
+/*Døgn stay should have minimum of liggetid=1*/
+/*when a stay crosses year, and the check out date is 1 Jan, the above calculation gives liggetid=0.
+  however since it is a part of døgn, assign it to 1*/
+  if erdogn=1 and KontaktLiggetid=0 then KontaktLiggetid=1;
+
   format KontaktInndatotid KontaktUtdatotid datetime18.;
   format KontaktInndato    KontaktUtdato    date10.;
 
  run;
+
  
 %mend;
