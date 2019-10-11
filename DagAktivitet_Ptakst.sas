@@ -1,4 +1,4 @@
-%macro DagAktivitet_Ptakst(inndata=, utdata=);
+%macro DagAktivitet_Ptakst(inndata=, utdata=,tell_alle=0,ptakst_indir=0);
 
 
 /* Create a new variable, KontaktID, to identify contacts per pid per dag per behandlende institusjon */
@@ -38,16 +38,28 @@ data tmp;
   
   by pid inndato utdatoKombi descending varighet;
 
-/*Setter variabel Ptakst=1 på alle kontakter med takst*/  
 
+/*Setter variabel Ptakst=1 på alle kontakter i PHV som skal telles*/  
 if sektor =2 then do;
-	if (erDogn=1 or indirekte=1) then Ptakst=1;
-	else do;
-	  array takst {*} Takst:;
-		do i=1 to dim(takst);
-		if substr(takst{i},1,1) = ("P") then Ptakst=1;
-		end;
-	end;
+  %if &tell_alle=1 %then Ptakst=1;
+  %else %if &ptakst_indir=1 %then %do;
+    if erDogn=1 then Ptakst=1;
+    else do;
+      array takst {*} Takst:;
+      do i=1 to dim(takst);
+      if substr(takst{i},1,1) = ("P") then Ptakst=1;
+      end;
+    end;
+  %end;
+  %else %do;
+    if (erDogn=1 or indirekte=1) then Ptakst=1;
+    else do;
+      array takst {*} Takst:;
+      do i=1 to dim(takst);
+      if substr(takst{i},1,1) = ("P") then Ptakst=1;
+      end;
+    end;
+  %end;
 end;
 	
 	/*For kontakter hos avtalespesialist eller i TSB skal alle kontakter telles, 
