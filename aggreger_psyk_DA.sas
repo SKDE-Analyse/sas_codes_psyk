@@ -121,6 +121,7 @@ run;
   proc sql;
     create table ut_komnr as 
     select distinct Kontaktaar, ermann, KontaktAlder, komnr, bydel, borhf, bohf, bodps,
+    sum(tot) as tot,
     SUM(tot_unik_aar) as tot_unik_aar,
     SUM(inn) as inn, SUM(inn_unik_aar) as inn_unik_aar,
     SUM(inn_elektiv) as inn_elek, 

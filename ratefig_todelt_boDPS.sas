@@ -47,8 +47,8 @@ ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_png";
 proc sgplot data=&figtittel noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
-     hbarparm category=boDPS_ny response=rate_tot / fillattrs=(color=CX95BDE6) missing name="rate 2" legendlabel="&label2" outlineattrs=(color=grey);  
-     hbarparm category=boDPS_ny response=rate_del1/ fillattrs=(color=CX568BBF) missing name="rate 1" legendlabel="&label1" outlineattrs=(color=grey);  
+     hbarparm category=boDPS_ny response=rate_tot / fillattrs=(color=CX568BBF) missing name="rate 2" legendlabel="&label2" outlineattrs=(color=grey);  
+     hbarparm category=boDPS_ny response=rate_del1/ fillattrs=(color=CX95BDE6) missing name="rate 1" legendlabel="&label1" outlineattrs=(color=grey);  
 
      scatter x=&data1._rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
 	 scatter x=&data1._rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 
@@ -74,8 +74,8 @@ ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe_pdf";
 proc sgplot data=&figtittel noborder noautolegend sganno=anno pad=(Bottom=5%);
 where BoDPS_ny le 14;
 
-     hbarparm category=boDPS_ny response=rate_tot / fillattrs=(color=CX95BDE6) missing name="rate 2" legendlabel="&label2" outlineattrs=(color=grey);  
-     hbarparm category=boDPS_ny response=rate_del1/ fillattrs=(color=CX568BBF) missing name="rate 1" legendlabel="&label1" outlineattrs=(color=grey);  
+     hbarparm category=boDPS_ny response=rate_tot / fillattrs=(color=CX568BBF) missing name="rate 2" legendlabel="&label2" outlineattrs=(color=grey);  
+     hbarparm category=boDPS_ny response=rate_del1/ fillattrs=(color=CX95BDE6) missing name="rate 1" legendlabel="&label1" outlineattrs=(color=grey);  
 
      scatter x=&data1._rate_2017 y=BoDPS_ny / markerattrs=(symbol=circle       color=black size=9pt) name="y3" legendlabel="2017"; 
 	 scatter x=&data1._rate_2016 y=BoDPS_ny / markerattrs=(symbol=circlefilled color=grey  size=7pt) name="y2" legendlabel="2016"; 

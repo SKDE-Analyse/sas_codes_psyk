@@ -39,14 +39,20 @@ data tmp;
   by pid inndato utdatoKombi descending varighet;
 
 /*Setter variabel Ptakst=1 på alle kontakter med takst*/  
-  array takst {*} Takst:;
-    do i=1 to dim(takst);
-    if substr(takst{i},1,1) = ("P") then Ptakst=1;
-    end;
+
+if sektor =2 then do;
+	if (erDogn=1 or indirekte=1) then Ptakst=1;
+	else do;
+	  array takst {*} Takst:;
+		do i=1 to dim(takst);
+		if substr(takst{i},1,1) = ("P") then Ptakst=1;
+		end;
+	end;
+end;
 	
 	/*For kontakter hos avtalespesialist eller i TSB skal alle kontakter telles, 
 	setter derfor Ptakst=1 som default for disse sektorene*/
-	if sektor in (1,4) then Ptakst=1;
+	if sektor ne 2 then Ptakst=1;
   
   * each pid receives sequencial numbers for all opphold;
   if first.pid=1 then oppholdsnr=0;
@@ -68,19 +74,13 @@ run;
 data tmp;
   set tmp;
   
- 
-  by pid inndato utdatoKombi sep_inst;
-  retain kontaktID; 
-  
-  * assign kontaktID for opphold that have Ptakst=1 or ErDogn=1;
-  /*if first.sep_inst then do;*/
-  if Ptakst=1 or ErDogn=1 then do;
+   by pid inndato utdatoKombi sep_inst;
+    
     KontaktID=pid*1000+oppholdsnr;
-	  KontaktNOpphold_tmp=0;* number of opphold within each contact;
-	  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
-  end;
-  
-  KontaktNOpphold_tmp+1;
+  KontaktNOpphold_tmp=0;* number of opphold within each contact;
+  KontaktVarighet_tmp=0;* contact duration - sum up duration for each opphold, even if there are overlap;
+
+    KontaktNOpphold_tmp+1;
   KontaktVarighet_tmp+varighet;
 
 /*Lager BehHF_kontakt-variabel slik at den kan brukes i aggregering (egentlig kun aktuell for enkelte døgnopphold der flere HF er del av et opphold)*/

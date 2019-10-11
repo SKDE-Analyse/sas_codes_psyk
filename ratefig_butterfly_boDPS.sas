@@ -63,9 +63,9 @@ proc format;
 
 %macro plot_butterfly(fmt=);
 
-%let mappe_&fmt=&mappe.\&fmt\justrate;
+
 ODS Graphics ON /reset=All imagename="&figtittel" imagefmt=&fmt border=off ;
-ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe.\&fmt\justrate";
+ODS Listing Image_dpi=300 GPATH="&bildelagring.&mappe.\&fmt";
 
 proc sgplot data=butterfly noborder noautolegend sganno=anno pad=(Bottom=5%);
   where BoDPS_ny le 14;

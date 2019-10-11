@@ -28,7 +28,7 @@ where sektor=1 and BoHF=&opptak;
 run;
 %end;
 
-/*Grupperer sammen dag/poli-opphold og innleggelser til pasientdager og institusjonsopphold*/
+/*Grupperer sammen dag/poli-opphold og innleggelser til polikliniske kontakter og institusjonsopphold*/
 %DagAktivitet_ikke_overf(inndata=tsb1517_&navn_opptak, utdata=tsb1517_DA);
 /*Aggregerer*/
 %aggreger_psyk_DA(inndata=tsb1517_DA, utdata=tsb1517_agg, agg_var=alle);
